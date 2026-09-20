@@ -12,13 +12,13 @@
 
 ## 当前任务
 
-- 状态：in-progress，按仓库规范发布 `v3.3.19` GitHub Release。
-- 里程碑：M4 三网 Sparkline 每时段延迟 + M6 发布/验证。
-- 版本：`komari-theme.json` `3.3.18` → `3.3.19`。
-- 内容：新版 Sparkline 悬停/点按查看每个时间段延迟；粗指针停留提示；禁止选中复制；修复 iOS 兼容鼠标清掉提示、pointerleave 误清、pointer capture 挡住滚动。
-- 发布路径：本仓库 Actions 仍无 workflow run，继续走本地 `bun run build` + GitHub API。
-- 范围：提交功能与 README；校验 zip 契约；创建正式 Release `v3.3.19` 并核验线上资产。
-- 不做：不 force-push；不给 `package.json` 加顶层 version；不提交 `vite.config.ts` 本机 API 目标。
+- 状态：done，v3.3.19 已通过 GitHub API 发布。
+- 内容：三网新版 Sparkline 悬停/点按查看每个时间段延迟；粗指针停留提示；折线区域禁止选中复制；忽略 iOS 兼容鼠标、按 rowKey 处理 pointerleave、不 capture 以免挡住滚动。
+- 提交：`d24b963` `feat: add sparkline period latency inspect and release 3.3.19`，已推送 `main`。
+- Release：https://github.com/towersip/komari-theme-Glassmorphism/releases/tag/v3.3.19 正式发布，非 draft / prerelease；tag 指向 `d24b9638d93c6a73979fd5f9c421fd2070dcb5b0`。
+- 资产：`komari-theme-Glassmorphism-build-d24b963.zip`，5,156,586 bytes，SHA-256 `20A4871882EB8DEFFA136C9E7BFA3A1825DED19395352997C9CC334891125ABE`；GitHub API digest 与下载后本地一致，包内版本 `3.3.19`，356 个条目，顶层 `komari-theme.json` / `preview.png` / `dist/`。
+- 验证：`vue-tsc --build` 与 `vite build` 通过；Node 22 下改动文件 ESLint 与 `git diff --check` 通过；系统 Chrome 三网 Sparkline Playwright 3/3 通过；zip 无 `admin-app`；本仓库 Actions 仍无 workflow run，因此未走 `Release On Version Bump`。
+- 不做：不 force-push；不给 `package.json` 加顶层 version。
 
 ## 上一任务
 
@@ -252,6 +252,12 @@
 - 不做：不把 Glassmorphism 默认主题替换混入计费 PR #604；不发布测试构建为正式 Release；不构建 Windows 包。
 
 ## 执行日志
+
+### 2026-09-20 v3.3.19 Release
+
+- README 当前版本与更新日志同步到 `v3.3.19`；提交 `d24b963` 已推送 `main`。
+- 本地构建生成 `komari-theme-Glassmorphism-build-d24b963.zip`；tag `v3.3.19` 指向该提交。
+- 因仓库 Actions 无 workflow run，使用 GitHub API 创建正式 Release 并上传 zip；下载复核 SHA-256、包内版本和顶层契约均通过。
 
 ### 2026-09-18 v3.3.18 Release
 
@@ -595,6 +601,7 @@
 
 ## 验证记录
 
+- 2026-09-20 v3.3.19 release：`vue-tsc --build`、`vite build`、`git diff --check` 通过；Node 22 下改动文件 ESLint 通过；系统 Chrome 三网 Sparkline Playwright 3/3 通过。本地 zip 顶层为 `komari-theme.json`、`preview.png`、`dist/`，包内版本 `3.3.19`，356 个条目。GitHub Release `v3.3.19` 为正式发布（非 draft / prerelease），tag / target 均为 `d24b9638d93c6a73979fd5f9c421fd2070dcb5b0`。线上 zip `komari-theme-Glassmorphism-build-d24b963.zip` 大小 5,156,586 bytes，SHA-256 `20A4871882EB8DEFFA136C9E7BFA3A1825DED19395352997C9CC334891125ABE`，与 GitHub digest 及本地下载复核一致。本仓库 Actions 仍无 workflow run。
 - 2026-09-18 v3.3.17 release：`vue-tsc --build`、`vite build`、`git diff --check` 通过；本地 zip 顶层为 `komari-theme.json`、`preview.png`、`dist/`，包内版本 `3.3.17`，353 个条目。GitHub Release `v3.3.17` 为正式发布（非 draft / prerelease），tag / target 均为 `38e9db22178f120efeb434f2a3488d2f04b7adea`。线上 zip `komari-theme-Glassmorphism-build-38e9db2.zip` 大小 5,149,298 bytes，SHA-256 `D96435651B4F28812A088123786314315110E26E2BC5B2AF5B9ABE20B9767FD2`，与 GitHub digest 及本地下载复核一致。本仓库 Actions 仍无 workflow run。
 - 2026-09-17 v3.3.12 三网延迟：`vue-tsc --build` 通过；`git diff --check` 通过；本机 `http://localhost:5173/` 默认关闭时首页卡片仍只有延迟/丢包，无 `[data-three-net-ping]`。实时 `node.ping` 已写入 store。开启态需管理员在主题设置打开开关并选择最多 3 个任务后验证。`bun run lint` 因本机 Bun/Node 缺少 `Object.groupBy` 未作为通过证据。
 - 2026-07-14 v3.1.4 Issue #18 release：`bun run lint`、`bun run build`、`git diff --check` 通过；发布提交 `91c9b06` 已推送 `main`，Actions run `#29312369165`（#49）成功，tag / Release target 均为完整提交 `91c9b06fc5c4b5ee2636dc18779861186806abd7`，Issue #18 已关闭。线上 zip `komari-theme-Glassmorphism-build-91c9b06.zip` 大小 5,114,852 bytes，SHA-256 `f8b4c9b6f61cc66d755d7a612357d16d1d2774f9494b9b0c3ce87e572ee5da9b`，下载复核顶层结构 `komari-theme.json`、`preview.png`、`dist/`，包内版本 `3.1.4`。构建仍只有既有 `@vueuse/core` PURE 注释与 `globe` 大 chunk 警告。
