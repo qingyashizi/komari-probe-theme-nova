@@ -12,16 +12,11 @@
 
 ## 当前任务
 
-- 状态：done，官方 Komari 主程序 / Agent 已迁到 `towersip` 个人维护仓。
-- 仓库：https://github.com/towersip/komari 、https://github.com/towersip/komari-agent 、https://github.com/towersip/komari-web
-- 提交：`komari` `cc7e7b7`、`komari-agent` `00e0620`、`komari-web` `7d44921`、主题文档 `f4d3ddf`，均已推送。
-- Release 镜像：`towersip/komari` `1.5.0-fix1`、`towersip/komari-agent` `1.5.11` 已从官方最新稳定包复制资产，安装脚本可先用。
-- 验证：三个 fork 已存在；安装/自动更新/管理端 Agent 命令已改指向 `towersip`；主题页脚改为 `towersip/komari`。
-- 不做：不改 Go module path；不 bump 主题版本；不在本轮自建新二进制；未发布 Docker 到 `ghcr.io/towersip/*`。
-
-## 上一任务
-
-- 状态：done，v3.3.18 已通过 GitHub API 发布。
+- 状态：done，已放弃个人维护 Komari 主程序 / Agent / 管理端，并回退昨天的主题 404 修复。
+- 主题：丢弃未提交的 v3.3.19 PWA/404 改动（`index.html` 仍注册 `/sw.js`，版本回到 `3.3.18`）；页脚和文档改回官方 `komari-monitor/komari`，不再指向个人 Komari 仓。
+- GitHub：当前 token 有 `repo` 但没有 `delete_repo`，API 删除 `towersip/komari`、`towersip/komari-agent`、`towersip/komari-web` 返回 403。需在网页 Danger Zone 手动删除。
+- 本地：删除 `项目模版/komari`、`komari-agent`、`komari-web` 克隆。
+- 保留：只维护本仓库 `towersip/komari-theme-Glassmorphism`。
 
 ## 上一任务
 
