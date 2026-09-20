@@ -12,6 +12,16 @@
 
 ## 当前任务
 
+- 状态：in-progress，按仓库规范发布 `v3.3.19` GitHub Release。
+- 里程碑：M4 三网 Sparkline 每时段延迟 + M6 发布/验证。
+- 版本：`komari-theme.json` `3.3.18` → `3.3.19`。
+- 内容：新版 Sparkline 悬停/点按查看每个时间段延迟；粗指针停留提示；禁止选中复制；修复 iOS 兼容鼠标清掉提示、pointerleave 误清、pointer capture 挡住滚动。
+- 发布路径：本仓库 Actions 仍无 workflow run，继续走本地 `bun run build` + GitHub API。
+- 范围：提交功能与 README；校验 zip 契约；创建正式 Release `v3.3.19` 并核验线上资产。
+- 不做：不 force-push；不给 `package.json` 加顶层 version；不提交 `vite.config.ts` 本机 API 目标。
+
+## 上一任务
+
 - 状态：done，已放弃个人维护 Komari 主程序 / Agent / 管理端，并回退昨天的主题 404 修复。
 - 主题：丢弃未提交的 v3.3.19 PWA/404 改动（`index.html` 仍注册 `/sw.js`，版本回到 `3.3.18`）；页脚和文档改回官方 `komari-monitor/komari`，不再指向个人 Komari 仓。
 - GitHub：当前 token 有 `repo` 但没有 `delete_repo`，API 删除 `towersip/komari`、`towersip/komari-agent`、`towersip/komari-web` 返回 403。需在网页 Danger Zone 手动删除。

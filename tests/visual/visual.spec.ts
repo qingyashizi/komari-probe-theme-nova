@@ -273,6 +273,18 @@ test('three-net ping sparkline style uses name latency line and loss', async ({ 
     await expect(card.locator(`[data-node-ping-loss="task-${taskId}"]`)).toContainText('丢包')
   }
 
+  const latencyTooltips = card.locator('[data-node-ping-sparkline="task-1"] [role="tooltip"]')
+  const sparkline = card.locator('[data-node-ping-sparkline="task-1"]')
+  await expect.poll(() => sparkline.evaluate(element => element.getBoundingClientRect().width)).toBeGreaterThan(40)
+  await sparkline.hover({ position: { x: 48, y: 8 } })
+  await expect(sparkline.locator('[role="tooltip"]')).toBeVisible()
+  await expect.poll(async () => {
+    const texts = await latencyTooltips.allTextContents()
+    return texts.some((text) => {
+      return /\d{2}:\d{2}:\d{2}/.test(text) && /\d+\s*ms/.test(text)
+    })
+  }).toBeTruthy()
+
   await expect(card.locator('[data-node-ping-loss="task-1"]')).toContainText(/[1-9]/)
 })
 
@@ -290,14 +302,16 @@ test('three-net sparkline loss values stay aligned on narrow cards', async ({ pa
   await expect(lossValues).toHaveCount(3)
 
   const layout = await rows.first().evaluate((element) => {
-    const style = getComputedStyle(element)
+    const parent = element.parentElement
     return {
-      columns: style.gridTemplateColumns,
+      childCount: element.children.length,
+      parentColumns: parent ? getComputedStyle(parent).gridTemplateColumns : '',
       width: element.getBoundingClientRect().width,
       right: element.getBoundingClientRect().right,
     }
   })
-  expect(layout.columns.split(' ').length).toBe(5)
+  expect(layout.childCount).toBe(5)
+  expect(layout.parentColumns.split(' ').filter(Boolean).length).toBe(5)
   expect(layout.width).toBeGreaterThan(0)
 
   const labelLefts = await lossLabels.evaluateAll(elements => elements.map(element => element.getBoundingClientRect().left))
@@ -305,6 +319,32 @@ test('three-net sparkline loss values stay aligned on narrow cards', async ({ pa
   expect(Math.max(...labelLefts) - Math.min(...labelLefts)).toBeLessThanOrEqual(1)
   expect(Math.max(...valueRights) - Math.min(...valueRights)).toBeLessThanOrEqual(1)
   expect(valueRights.every(right => right <= layout.right + 1)).toBe(true)
+})
+
+test('three-net sparkline period tooltip can be tapped on a phone card', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await installKomariFixture(page, { hideEarth: true, threeNetPing: true, threeNetPingSparkline: true })
+  await openStablePage(page)
+
+  const card = page.getByRole('button', { name: '查看节点 主控-洛杉矶 详情' })
+  const sparkline = card.locator('[data-node-ping-sparkline="task-1"]')
+  await expect.poll(() => sparkline.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThan(20)
+  await sparkline.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    element.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: rect.left + rect.width * 0.65,
+      clientY: rect.top + rect.height / 2,
+    }))
+  })
+  const tooltip = sparkline.locator('[role="tooltip"]')
+  await expect(tooltip).toBeVisible()
+  await expect(tooltip).toContainText(/\d{2}:\d{2}:\d{2}/)
+  await expect(tooltip).toContainText(/\d+\s*ms/)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
 test('node card expiry uses red through 5 days and yellow through 10 days', async ({ page }) => {

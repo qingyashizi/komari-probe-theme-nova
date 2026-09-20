@@ -8,6 +8,7 @@ import { DataTooltip } from '@/components/ui/data-tooltip'
 import { ProgressThin } from '@/components/ui/progress-thin'
 import { Sparkline } from '@/components/ui/sparkline'
 import { useNodePingDisplay } from '@/composables/useNodePingDisplay'
+import { sparklineMarkerPercent, useSparklinePeriodInspect } from '@/composables/useSparklinePeriodInspect'
 import { useThreeNetPing } from '@/composables/useThreeNetPing'
 import { useAppStore } from '@/stores/app'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, getStatus, getUptimeDays } from '@/utils/helper'
@@ -33,13 +34,6 @@ const isFavorite = computed(() => appStore.isFavoriteNode(props.node.uuid))
 
 function toggleFavorite(): void {
   appStore.toggleFavoriteNode(props.node.uuid)
-}
-
-function handleKeyboardOpen(event: KeyboardEvent) {
-  if (event.key !== 'Enter' && event.key !== ' ')
-    return
-  event.preventDefault()
-  emit('click')
 }
 
 interface RemainingInfoTag {
@@ -70,6 +64,31 @@ const nodeCardPanelClass = computed(() => appStore.nodeCardSize === 'large' ? 'h
 const nodeCardPingPanelClass = computed(() => isMiniNodeCard.value ? 'gap-1 p-1' : 'gap-1.5 p-2')
 const nodeCardPingTextClass = computed(() => isMiniNodeCard.value ? 'text-[10px]' : 'text-[11px]')
 const pingSparklineStyle = computed(() => appStore.threeNetPingSparkline)
+const {
+  inspect: sparklineInspect,
+  onPointerDown: onSparklinePointerDown,
+  onPointerMove: onSparklinePointerMove,
+  onPointerLeave: onSparklinePointerLeave,
+  clear: clearSparklineInspect,
+} = useSparklinePeriodInspect()
+
+function handleKeyboardOpen(event: KeyboardEvent) {
+  if (event.key !== 'Enter' && event.key !== ' ')
+    return
+  event.preventDefault()
+  clearSparklineInspect()
+  emit('click')
+}
+
+function handleCardClick() {
+  clearSparklineInspect()
+  emit('click')
+}
+
+function handlePingRowClick() {
+  clearSparklineInspect()
+  emit('pingClick')
+}
 
 const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
 const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
@@ -272,7 +291,7 @@ function hasRegion(region: string | null | undefined): boolean {
     role="button"
     tabindex="0"
     :aria-label="`查看节点 ${props.node.name} 详情`"
-    @click="emit('click')"
+    @click="handleCardClick"
     @keydown="handleKeyboardOpen"
   >
     <!-- 头部：在线点 + 名称 -->
@@ -534,6 +553,7 @@ function hasRegion(region: string | null | undefined): boolean {
         <!-- 延迟 + 丢包：默认总览一行；开启三网后每条线路一行。新版 Sparkline 由 threeNetPingSparkline 控制。 -->
         <div
           :data-three-net-ping="threeNetPingVisible ? '' : undefined"
+          class="select-none"
           :class="[pingSparklineStyle ? 'ping-sparkline-list gap-y-1' : 'flex flex-col gap-1.5', pingSparklineStyle && !props.node.online && 'opacity-50']"
         >
           <template v-if="pingSparklineStyle">
@@ -542,34 +562,55 @@ function hasRegion(region: string | null | undefined): boolean {
               :key="row.key"
               type="button"
               class="ping-sparkline-row group/ping min-h-5 min-w-0 items-center rounded-md px-0.5 text-left leading-none hover:bg-slate-500/5"
-              :title="`${row.latencyTooltip}\n${row.lossTooltip}`"
               :aria-label="row.ariaLabel"
-              @click.stop="emit('pingClick')"
+              @click.stop="handlePingRowClick"
             >
               <span class="size-1.5 shrink-0 rounded-full" :class="row.dotClass" />
               <span
                 class="min-w-0 truncate text-muted-foreground"
                 :class="nodeCardPingTextClass"
+                :title="row.latencyTooltip"
               >
                 {{ row.label }}
               </span>
               <span
                 class="text-right font-medium tabular-nums"
                 :class="[nodeCardPingTextClass, row.latencyToneClass]"
+                :title="row.latencyTooltip"
               >
                 {{ row.latencyDisplay }}
               </span>
               <span
                 :data-node-ping-sparkline="row.sparklineAttr"
-                class="h-4 min-w-0"
+                class="ping-sparkline-hit relative h-4 min-w-0 overflow-visible"
                 :class="row.latencyToneClass"
+                @pointerdown="onSparklinePointerDown($event, row.key, row.latencyBars.length)"
+                @pointermove="onSparklinePointerMove($event, row.key, row.latencyBars.length)"
+                @pointerleave="onSparklinePointerLeave($event, row.key)"
+                @click.stop
               >
-                <Sparkline :values="row.latencyPoints" />
+                <span class="pointer-events-none absolute inset-x-0 top-1/2 h-4 -translate-y-1/2">
+                  <Sparkline :values="row.latencyPoints" />
+                </span>
+                <template v-if="sparklineInspect?.rowKey === row.key">
+                  <span
+                    class="pointer-events-none absolute top-1/2 h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current"
+                    :style="{ left: `${sparklineMarkerPercent(sparklineInspect.index, row.latencyBars.length)}%` }"
+                  />
+                  <span
+                    role="tooltip"
+                    class="pointer-events-none absolute bottom-full z-30 mb-1 w-max -translate-x-1/2 whitespace-pre-line rounded bg-foreground/80 p-1 text-center text-[10px] leading-snug text-background shadow-lg"
+                    :style="{ left: `${sparklineMarkerPercent(sparklineInspect.index, row.latencyBars.length)}%` }"
+                  >
+                    {{ row.latencyBars[sparklineInspect.index]?.tooltip }}
+                  </span>
+                </template>
               </span>
               <span
                 :data-node-ping-loss="row.lossAttr"
                 class="ping-loss-cell grid min-w-[3.75rem] grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-0.5 whitespace-nowrap font-medium tabular-nums"
                 :class="nodeCardPingTextClass"
+                :title="row.lossTooltip"
               >
                 <template v-if="row.lossDisplay === '-' || row.lossDisplay === '加载中'">
                   <span class="ping-loss-value text-right text-muted-foreground">{{ row.lossDisplay }}</span>
@@ -700,6 +741,14 @@ function hasRegion(region: string | null | undefined): boolean {
   column-gap: 0.25rem;
 }
 
+.ping-sparkline-list,
+.ping-sparkline-row,
+.ping-sparkline-hit {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .ping-sparkline-row {
   display: grid;
   grid-column: 1 / -1;
@@ -707,6 +756,18 @@ function hasRegion(region: string | null | undefined): boolean {
   column-gap: inherit;
   grid-template-columns: auto minmax(0, max-content) max-content minmax(3.5rem, 1fr) max-content;
   grid-template-columns: subgrid;
+}
+
+.ping-sparkline-hit {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (pointer: coarse), (max-width: 420px) {
+  .ping-sparkline-hit {
+    min-height: 2rem;
+    margin-block: -0.375rem;
+  }
 }
 
 .ping-loss-cell {

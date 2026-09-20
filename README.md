@@ -54,7 +54,7 @@ https://github.com/towersip/komari-theme-Glassmorphism
 | :------- | :-------------------------------------------------------- |
 | 本仓库   | [towersip/komari-theme-Glassmorphism](https://github.com/towersip/komari-theme-Glassmorphism)，自己用，按需改 |
 | 原项目   | [sanrokamlan-prog/komari-theme-Glassmorphism](https://github.com/sanrokamlan-prog/komari-theme-Glassmorphism) |
-| 当前版本 | **v3.3.18**                                               |
+| 当前版本 | **v3.3.19**                                               |
 | 主题定位 | Komari Monitor 可导入 zip 主题，不是普通 Web App 部署包   |
 | 视觉风格 | 毛玻璃卡片、动态背景、浅色 / 深色 / 北京时间自动日夜模式  |
 | 数据能力 | Metric Store 优先，旧接口自动 fallback，兼容 Komari 1.2.x |
@@ -62,6 +62,13 @@ https://github.com/towersip/komari-theme-Glassmorphism
 | 发布产物 | `komari-theme-Glassmorphism-build-<short-sha>.zip`        |
 
 > 按自己盯节点、Ping、流量、费用的习惯改，不是给所有人做的产品。
+
+---
+
+## 📶 v3.3.19 三网 Sparkline 每时段延迟
+
+- 开启「三网新版样式」后，悬停或点按 Sparkline 可查看该时间段的时间和延迟，与旧版方柱提示一致
+- 手机上点按折线会停留提示，点空白处关闭；该区域禁止选中复制
 
 ---
 
@@ -641,6 +648,22 @@ dist/
 ## 📝 更新日志
 
 <details open>
+<summary><strong>v3.3.19 · 三网 Sparkline 每时段延迟</strong></summary>
+
+- 新版 Sparkline 支持按时间段查看延迟：桌面悬停、手机点按停留提示
+- 三网折线区域禁止选中复制，避免误操作
+
+</details>
+
+<details>
+<summary><strong>v3.3.18 · 按服务器配置三网任务</strong></summary>
+
+- 管理员登录且开启「显示三网延迟」后，可按服务器勾选 1～3 个 Ping 任务
+- 未单独配置的服务器继续使用全局三网任务；保存时按 Komari `pingtasks` 契约写回 JSON 字符串
+
+</details>
+
+<details>
 <summary><strong>v3.3.17 · 离线卡片与背景方向稳定</strong></summary>
 
 - 离线节点卡片改为顶栏「离线」徽章 + 内容降饱和，去掉整卡毛玻璃遮罩
