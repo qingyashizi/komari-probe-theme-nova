@@ -44,6 +44,9 @@ https://github.com/towersip/komari-theme-Glassmorphism
 
 <img src="docs/preview.png" width="80%" alt="Komari Glassmorphism 可配置能力概览" />
 
+<img src="docs/preview-three-net-sparkline.png" width="45%" alt="浅色三网 Sparkline 卡片" />
+<img src="docs/preview-three-net-sparkline-dark.png" width="45%" alt="深色三网 Sparkline 卡片" />
+
 </div>
 
 ---
