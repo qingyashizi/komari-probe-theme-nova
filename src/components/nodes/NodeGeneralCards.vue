@@ -1,32 +1,21 @@
 <script setup lang="ts">
 import type { GeneralCardKey } from '@/stores/app'
 import type { NodeData } from '@/stores/nodes'
-import type { CurrencyCode, ExchangeRateSource } from '@/utils/financeHelper'
 import type { TopNodeMetric } from '@/utils/nodeMetricsHelper'
 import { Icon } from '@iconify/vue'
 import { useNow } from '@vueuse/core'
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import NodeEarthGlobe from '@/components/earth/NodeEarthGlobe.vue'
 import { CardX } from '@/components/ui/card-x'
 import { DataTooltip } from '@/components/ui/data-tooltip'
+import { useNodeFinanceSettings } from '@/composables/useNodeFinanceSettings'
+import { useNodeSummaryStats } from '@/composables/useNodeSummaryStats'
 import { UI_CONFIG } from '@/constants/ui'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import * as financeHelper from '@/utils/financeHelper'
-import { gpuUsageFromStatus } from '@/utils/gpuHelper'
 import { formatBytesPerSecondSplit, formatBytesSplit } from '@/utils/helper'
-import {
-  getConnectionCount,
-  getExpiryDays,
-  getHighLoadMetrics,
-  getRealtimeTotalSpeed,
-  getTrafficUsed,
-  getTrafficUsedPercentage,
-  isExpiringNode,
-  isHighLoadNode,
-  isTrafficWarningNode,
-} from '@/utils/nodeMetricsHelper'
-import { getRegionDisplayName } from '@/utils/regionHelper'
+import { getExpiryDays, getHighLoadMetrics, getTrafficUsedPercentage } from '@/utils/nodeMetricsHelper'
 import { isFreeNode } from '@/utils/tagHelper'
 
 interface GeneralMetricCard {
@@ -39,26 +28,6 @@ interface GeneralMetricCard {
   action?: 'financeDetails'
 }
 
-interface OnlineStats {
-  count: number
-  totalSpeed: { up: number, down: number }
-  avgCpu: number
-  totalGpu: number
-  gpuNodeCount: number
-  avgLoad: number
-  avgLoad5: number
-  avgLoad15: number
-  totalProcesses: number
-  totalConnectionsTcp: number
-  totalConnectionsUdp: number
-  trafficPeak: TopNodeMetric | null
-  uploadPeakNode: TopNodeMetric | null
-  downloadPeakNode: TopNodeMetric | null
-  gpuPeakNode: TopNodeMetric | null
-  connectionPeakNode: TopNodeMetric | null
-  highLoadNodes: NodeData[]
-}
-
 const props = defineProps<{
   nodes?: NodeData[]
   globeNodes?: NodeData[]
@@ -69,12 +38,17 @@ const nodesStore = useNodesStore()
 const FinanceDetailsDialog = defineAsyncComponent(() => import('@/components/tools/FinanceDetailsDialog.vue'))
 // 未登录且开启「未登录隐藏价格」时，屏蔽金额类信息
 const showPrice = computed(() => appStore.privateFeaturesAllowed || !appStore.hidePriceWhenLoggedOut)
-const exchangeRates = ref(financeHelper.DEFAULT_EXCHANGE_RATES)
-const dailyExchangeRates = ref(financeHelper.DEFAULT_EXCHANGE_RATES)
-const exchangeRateSource = ref<ExchangeRateSource | 'loading'>('loading')
-const exchangeRateUpdatedAt = ref<number | null>(null)
-const financeCurrency = ref<CurrencyCode>('CNY')
-const excludeFreeNodes = ref(true)
+const {
+  exchangeRates,
+  exchangeRateSource,
+  exchangeRateUpdatedAt,
+  financeCurrency,
+  excludeFreeNodes,
+  updateFinanceCurrency,
+  updateExcludeFreeNodes,
+  updateExchangeRate,
+  resetExchangeRates,
+} = useNodeFinanceSettings()
 const financeDetailsOpen = ref(false)
 const currentTime = useNow({ interval: 1000 })
 const summaryNodes = computed(() => props.nodes ?? nodesStore.visibleNodes)
@@ -145,28 +119,6 @@ function formatNodeNames(nodes: NodeData[], formatter?: (node: NodeData) => stri
   return lines.join('\n')
 }
 
-function getDistribution(nodes: NodeData[], selector: (node: NodeData) => string | null | undefined): Array<[string, number]> {
-  const map = new Map<string, number>()
-  for (const node of nodes) {
-    const key = selector(node)?.trim() || '未知'
-    map.set(key, (map.get(key) || 0) + 1)
-  }
-
-  return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
-}
-
-function getKnownDistribution(nodes: NodeData[], selector: (node: NodeData) => string | null | undefined): Array<[string, number]> {
-  const map = new Map<string, number>()
-  for (const node of nodes) {
-    const key = selector(node)?.trim()
-    if (!key)
-      continue
-    map.set(key, (map.get(key) || 0) + 1)
-  }
-
-  return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
-}
-
 function formatDistributionTooltip(entries: Array<[string, number]>): string {
   if (entries.length === 0)
     return '暂无数据'
@@ -201,83 +153,40 @@ function formatCostCard(amountCNY: number): { value: string, unit?: string } {
   }
 }
 
-function updateTopMetric(current: TopNodeMetric | null, node: NodeData, value: number): TopNodeMetric | null {
-  if (!Number.isFinite(value))
-    return current
-
-  if (!current || value > current.value)
-    return { node, value: Math.max(0, value) }
-
-  return current
-}
-
-const onlineStats = computed<OnlineStats>(() => {
-  const stats: OnlineStats = {
-    count: 0,
-    totalSpeed: { up: 0, down: 0 },
-    avgCpu: 0,
-    totalGpu: 0,
-    gpuNodeCount: 0,
-    avgLoad: 0,
-    avgLoad5: 0,
-    avgLoad15: 0,
-    totalProcesses: 0,
-    totalConnectionsTcp: 0,
-    totalConnectionsUdp: 0,
-    trafficPeak: null,
-    uploadPeakNode: null,
-    downloadPeakNode: null,
-    gpuPeakNode: null,
-    connectionPeakNode: null,
-    highLoadNodes: [],
-  }
-
-  for (const node of summaryNodes.value) {
-    if (!node.online)
-      continue
-
-    stats.count += 1
-    stats.totalSpeed.up += node.net_out || 0
-    stats.totalSpeed.down += node.net_in || 0
-    stats.avgCpu += node.cpu || 0
-    stats.avgLoad += node.load || 0
-    stats.avgLoad5 += node.load5 || 0
-    stats.avgLoad15 += node.load15 || 0
-    stats.totalProcesses += node.process || 0
-    stats.totalConnectionsTcp += node.connections || 0
-    stats.totalConnectionsUdp += node.connections_udp || 0
-    stats.trafficPeak = updateTopMetric(stats.trafficPeak, node, getRealtimeTotalSpeed(node))
-    stats.uploadPeakNode = updateTopMetric(stats.uploadPeakNode, node, node.net_out || 0)
-    stats.downloadPeakNode = updateTopMetric(stats.downloadPeakNode, node, node.net_in || 0)
-    stats.connectionPeakNode = updateTopMetric(stats.connectionPeakNode, node, getConnectionCount(node))
-    const gpu = gpuUsageFromStatus(node)
-    const hasGpu = Boolean(node.gpu_name?.trim()) || gpu > 0
-    if (hasGpu) {
-      stats.totalGpu += gpu
-      stats.gpuNodeCount += 1
-      stats.gpuPeakNode = updateTopMetric(stats.gpuPeakNode, node, gpu)
-    }
-    if (isHighLoadNode(node, appStore.homeHighLoadThreshold))
-      stats.highLoadNodes.push(node)
-  }
-
-  if (stats.count > 0) {
-    stats.avgCpu /= stats.count
-    stats.avgLoad /= stats.count
-    stats.avgLoad5 /= stats.count
-    stats.avgLoad15 /= stats.count
-  }
-
-  return stats
-})
-
-const totalSpeed = computed(() => onlineStats.value.totalSpeed)
-
-const totalTraffic = computed(() => {
-  const up = summaryNodes.value.reduce((sum, node) => sum + (node.net_total_up || 0), 0)
-  const down = summaryNodes.value.reduce((sum, node) => sum + (node.net_total_down || 0), 0)
-  return { up, down }
-})
+const {
+  totalSpeed,
+  totalTraffic,
+  totalMemory,
+  totalDisk,
+  totalSwap,
+  onlineNodeCount,
+  totalNodeCount,
+  avgCpu,
+  avgGpu,
+  gpuNodes,
+  onlineGpuNodes,
+  gpuPeakNode,
+  avgLoad,
+  avgLoad5,
+  avgLoad15,
+  totalProcesses,
+  totalConnectionsTcp,
+  totalConnectionsUdp,
+  totalCpuCores,
+  trafficQuota,
+  trafficQuotaPercentage,
+  trafficPeak,
+  uploadPeakNode,
+  downloadPeakNode,
+  connectionPeakNode,
+  offlineNodes,
+  highLoadNodes,
+  expiringNodes,
+  trafficWarningNodes,
+  regionDistribution,
+  systemDistribution,
+  virtualizationDistribution,
+} = useNodeSummaryStats(summaryNodes)
 
 const formattedTrafficUp = computed(() => formatBytesSplit(totalTraffic.value.up, appStore.byteDecimals))
 const formattedTrafficDown = computed(() => formatBytesSplit(totalTraffic.value.down, appStore.byteDecimals))
@@ -286,38 +195,6 @@ const totalTrafficTooltip = computed(() => formatBytesSplit(totalTraffic.value.u
 const formattedSpeedUp = computed(() => formatBytesPerSecondSplit(totalSpeed.value.up, appStore.byteDecimals))
 const formattedSpeedDown = computed(() => formatBytesPerSecondSplit(totalSpeed.value.down, appStore.byteDecimals))
 
-// ==================== 内存 / 硬盘 / 交换内存 汇总 ====================
-// 离线节点的 ram / disk / swap 为 0，不影响 used 求和；total 是静态库存信息，按全量统计
-const totalMemory = computed(() => {
-  let used = 0
-  let total = 0
-  for (const node of summaryNodes.value) {
-    used += node.ram || 0
-    total += node.mem_total || 0
-  }
-  return { used, total }
-})
-
-const totalDisk = computed(() => {
-  let used = 0
-  let total = 0
-  for (const node of summaryNodes.value) {
-    used += node.disk || 0
-    total += node.disk_total || 0
-  }
-  return { used, total }
-})
-
-const totalSwap = computed(() => {
-  let used = 0
-  let total = 0
-  for (const node of summaryNodes.value) {
-    used += node.swap || 0
-    total += node.swap_total || 0
-  }
-  return { used, total }
-})
-
 const formattedMemoryUsed = computed(() => formatBytesSplit(totalMemory.value.used, appStore.byteDecimals))
 const formattedMemoryTotal = computed(() => formatBytesSplit(totalMemory.value.total, appStore.byteDecimals))
 const formattedDiskUsed = computed(() => formatBytesSplit(totalDisk.value.used, appStore.byteDecimals))
@@ -325,52 +202,6 @@ const formattedDiskTotal = computed(() => formatBytesSplit(totalDisk.value.total
 const formattedSwapUsed = computed(() => formatBytesSplit(totalSwap.value.used, appStore.byteDecimals))
 const formattedSwapTotal = computed(() => formatBytesSplit(totalSwap.value.total, appStore.byteDecimals))
 
-const onlineNodeCount = computed(() => onlineStats.value.count)
-const totalNodeCount = computed(() => summaryNodes.value.length)
-const avgCpu = computed(() => onlineStats.value.avgCpu)
-const avgGpu = computed(() => onlineStats.value.gpuNodeCount > 0
-  ? onlineStats.value.totalGpu / onlineStats.value.gpuNodeCount
-  : null)
-const gpuNodes = computed(() => summaryNodes.value.filter(node => Boolean(node.gpu_name?.trim()) || (node.gpu || 0) > 0))
-const onlineGpuNodes = computed(() => gpuNodes.value.filter(node => node.online))
-const gpuPeakNode = computed(() => onlineStats.value.gpuPeakNode)
-const avgLoad = computed(() => onlineStats.value.avgLoad)
-const avgLoad5 = computed(() => onlineStats.value.avgLoad5)
-const avgLoad15 = computed(() => onlineStats.value.avgLoad15)
-const totalProcesses = computed(() => onlineStats.value.totalProcesses)
-const totalConnectionsTcp = computed(() => onlineStats.value.totalConnectionsTcp)
-const totalConnectionsUdp = computed(() => onlineStats.value.totalConnectionsUdp)
-const totalCpuCores = computed(() => summaryNodes.value.reduce((sum, node) => sum + (node.cpu_cores || 0), 0))
-const trafficQuota = computed(() => {
-  let used = 0
-  let limit = 0
-
-  for (const node of summaryNodes.value) {
-    if ((node.traffic_limit || 0) <= 0)
-      continue
-    used += getTrafficUsed(node)
-    limit += node.traffic_limit || 0
-  }
-
-  return { used, limit }
-})
-const trafficQuotaPercentage = computed(() => {
-  if (trafficQuota.value.limit <= 0)
-    return 0
-  return trafficQuota.value.used / trafficQuota.value.limit * 100
-})
-
-const trafficPeak = computed(() => onlineStats.value.trafficPeak)
-const uploadPeakNode = computed(() => onlineStats.value.uploadPeakNode)
-const downloadPeakNode = computed(() => onlineStats.value.downloadPeakNode)
-const connectionPeakNode = computed(() => onlineStats.value.connectionPeakNode)
-const offlineNodes = computed(() => summaryNodes.value.filter(node => !node.online))
-const highLoadNodes = computed(() => onlineStats.value.highLoadNodes)
-const expiringNodes = computed(() => summaryNodes.value.filter(node => isExpiringNode(node, appStore.homeExpiringDays)))
-const trafficWarningNodes = computed(() => summaryNodes.value.filter(node => isTrafficWarningNode(node, appStore.homeTrafficWarningThreshold)))
-const regionDistribution = computed(() => getKnownDistribution(summaryNodes.value, node => getRegionDisplayName(node.region)))
-const systemDistribution = computed(() => getDistribution(summaryNodes.value, node => node.os))
-const virtualizationDistribution = computed(() => getDistribution(summaryNodes.value, node => node.virtualization))
 const monthlyCostCNY = computed(() => summaryNodes.value.reduce((sum, node) => sum + getNodePeriodCostCNY(node, 30), 0))
 const yearlyCostCNY = computed(() => summaryNodes.value.reduce((sum, node) => sum + getNodePeriodCostCNY(node, 365), 0))
 
@@ -775,37 +606,6 @@ function handleCardKeydown(event: KeyboardEvent, card: GeneralMetricCard) {
   event.preventDefault()
   activateCard(card)
 }
-
-function updateFinanceCurrency(currency: CurrencyCode) {
-  financeCurrency.value = currency
-  financeHelper.setStoredFinanceCurrency(currency)
-}
-
-function updateExcludeFreeNodes(exclude: boolean) {
-  excludeFreeNodes.value = exclude
-  financeHelper.setExcludeFreeNodes(exclude)
-}
-
-function updateExchangeRate(currency: CurrencyCode, value: number) {
-  financeHelper.setExchangeRateOverride(currency, value)
-  exchangeRates.value = { ...exchangeRates.value, [currency]: value, CNY: 1 }
-}
-
-function resetExchangeRates() {
-  financeHelper.clearExchangeRateOverrides()
-  exchangeRates.value = { ...dailyExchangeRates.value }
-}
-
-onMounted(async () => {
-  financeCurrency.value = financeHelper.getStoredFinanceCurrency()
-  excludeFreeNodes.value = financeHelper.shouldExcludeFreeNodes()
-
-  const { rates, source, updatedAt } = await financeHelper.getDailyExchangeRates()
-  dailyExchangeRates.value = rates
-  exchangeRates.value = financeHelper.applyExchangeRateOverrides(rates)
-  exchangeRateSource.value = source
-  exchangeRateUpdatedAt.value = updatedAt
-})
 </script>
 
 <template>
