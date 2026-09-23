@@ -15,7 +15,7 @@
 - 状态：in-progress，`refactor/theme-nova-source-layout`。
 - 目标：按业务域整理 `src/components/`，随后将 `LoadChart` 的数据与 ECharts option 组合逻辑迁至 composables，保持公开路由、交互与视觉不变。
 - 已完成：第一阶段将业务组件归入 `layout`、`nodes`、`charts`、`earth`、`tools`、`content`，`components/ui` 保持不动；已更新所有 `src` import。
-- 验证：`git diff --check` 通过；当前环境缺少 `bun` 且不存在 `node_modules`，因此 lint、type-check/build、Playwright 视觉回归待具备项目运行时后执行。
+- 验证：`git diff --check`、`bun run build` 通过；Playwright Chromium 下 24 项视觉回归通过。`bun run lint` 仅在既有 `src/utils/tagHelper.ts:317` 报 `e18e/prefer-static-regex`，与本次目录移动无关；lint 自动格式化的无关变更未纳入分支。
 - 后续：在可运行 Bun 的环境中，以 `LoadChart` 为单一目标，将纯记录转换、请求状态和 ECharts option 组合按 utils/composable/展示组件分批拆出；每一批均需类型、构建和视觉回归通过后再提交。
 
 - 状态：done，v3.3.19 已通过 GitHub API 发布。
