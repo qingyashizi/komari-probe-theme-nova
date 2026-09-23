@@ -4,15 +4,16 @@ import type { HomeQuickControlKey } from '@/stores/app'
 import type { NodeData } from '@/stores/nodes'
 import { Icon } from '@iconify/vue'
 import { useDebounceFn } from '@vueuse/core'
-import { computed, defineAsyncComponent, nextTick, onActivated, onDeactivated, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onActivated, onDeactivated, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import DeferredRender from '@/components/nodes/DeferredRender.vue'
 import MarkdownRenderer from '@/components/content/MarkdownRenderer.vue'
+import DeferredRender from '@/components/nodes/DeferredRender.vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useNodeFinanceSettings } from '@/composables/useNodeFinanceSettings'
 import { useVisitorAudit } from '@/composables/useVisitorAudit'
 import { UI_CONFIG } from '@/constants/ui'
 import { useAppStore } from '@/stores/app'
@@ -84,8 +85,7 @@ const searchText = ref('')
 const debouncedSearchText = ref('')
 const activeHomeTool = ref<HomeToolKey>('nodes')
 const activeQuickControl = ref<HomeQuickControlKey | null>(null)
-const exchangeRates = ref(financeHelper.DEFAULT_EXCHANGE_RATES)
-const excludeFreeNodes = ref(true)
+const { exchangeRates, excludeFreeNodes } = useNodeFinanceSettings()
 const pingDialogNode = ref<NodeData | null>(null)
 
 const homeToolPermissionMap: Record<PrivateHomeToolKey, PermissionKey> = {
@@ -151,12 +151,6 @@ watch(
   },
   { immediate: true },
 )
-
-onMounted(async () => {
-  excludeFreeNodes.value = financeHelper.shouldExcludeFreeNodes()
-  const { rates } = await financeHelper.getDailyExchangeRates()
-  exchangeRates.value = rates
-})
 
 watch(
   () => nodesStore.groups,
