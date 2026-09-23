@@ -115,6 +115,7 @@ const EXPIRE_THRESHOLDS = {
 
 const TAG_COLOR_SUFFIX_REGEX = /<(\w+)>$/
 const TAG_COLOR_SUFFIX_REMOVE_REGEX = /<\w+>$/
+const TAG_LIST_SEPARATOR_REGEX = /[;；,，]/
 
 /**
  * 解析计费周期类型
@@ -272,7 +273,7 @@ export function parseTags(tags: string | undefined): Array<{ text: string, color
   if (!tags || tags.trim() === '')
     return []
 
-  const tagList = tags.split(/[;；,，]/).map(tag => tag.trim()).filter(Boolean)
+  const tagList = tags.split(TAG_LIST_SEPARATOR_REGEX).map(tag => tag.trim()).filter(Boolean)
 
   return tagList.map((tag, index) => {
     const { text, color } = parseTagWithColor(tag)
