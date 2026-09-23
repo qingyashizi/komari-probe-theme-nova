@@ -18,7 +18,7 @@ const CLOUD_ARM_CPU_PATTERN = /\b(?:ampere|ampereone|altra|graviton|neoverse|kun
 const VIRTUAL_CPU_PATTERN = /\b(?:kvm64|qemu|virtual\s+cpu|common\s+kvm|generic\s+cpu)\b/i
 const LOW_POWER_CPU_PATTERN = /\b(?:(?:intel\s+)?n(?:50|95|97|100|150|200|250|300|305)|celeron|pentium|atom)\b/i
 
-export type CpuBenchmarkTier = 'S' | 'A' | 'B' | 'C' | 'D' | '?'
+type CpuBenchmarkTier = 'S' | 'A' | 'B' | 'C' | 'D' | '?'
 
 export interface CpuBenchmarkRating {
   tier: CpuBenchmarkTier
@@ -189,7 +189,7 @@ const CPU_TIER_RULES: CpuTierRule[] = [
   { pattern: /\b(?:kvm64|qemu|virtual\s+cpu|common\s+kvm|generic\s+cpu)\b/i, tier: 'D' },
 ]
 
-export function normalizeCpuBenchmarkQuery(cpuName: string): string {
+function normalizeCpuBenchmarkQuery(cpuName: string): string {
   return cpuName
     .normalize('NFKC')
     .replace(CPU_TRADEMARK_PATTERN, '')

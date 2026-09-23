@@ -6,9 +6,6 @@ import { NETWORK_CONFIG } from '@/constants/network'
  * @see https://www.komari.wiki/dev/api.html
  */
 
-const HTTP_PROTOCOL_REGEX = /^http/
-const HTTPS_PROTOCOL_REGEX = /^https/
-
 // ==================== 类型定义 ====================
 
 /** API 响应基础结构 */
@@ -125,17 +122,8 @@ export interface RealtimeStatus {
   updated_at: string
 }
 
-/** WebSocket 实时状态响应 */
-export interface WebSocketRealtimeResponse {
-  status: 'success' | 'error'
-  data: {
-    online: string[]
-    data: Record<string, RealtimeStatus>
-  }
-}
-
 /** 负载历史记录（扁平结构） */
-export interface LoadRecord {
+interface LoadRecord {
   client: string
   time: string
   cpu: number
@@ -166,14 +154,14 @@ export interface LoadRecordsResponse {
 }
 
 /** Ping 历史记录 */
-export interface PingRecord {
+interface PingRecord {
   task_id: number
   time: string
   value: number
 }
 
 /** Ping 任务信息 */
-export interface PingTask {
+interface PingTask {
   id: number
   interval: number
   name: string
@@ -464,149 +452,6 @@ export class KomariApi {
   }
 }
 
-// ==================== WebSocket 实时状态客户端 ====================
-
-/** WebSocket 实时状态客户端 */
-export class RealtimeWebSocket {
-  private ws: WebSocket | null = null
-  private url: string
-  private reconnectInterval: number
-  private maxReconnectAttempts: number
-  private reconnectAttempts = 0
-  private listeners: Set<(data: WebSocketRealtimeResponse) => void> = new Set()
-  private errorListeners: Set<(error: Event) => void> = new Set()
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  private shouldReconnect = true
-  private isOpen = false
-
-  constructor(options: {
-    baseUrl?: string
-    reconnectInterval?: number
-    maxReconnectAttempts?: number
-  } = {}) {
-    const baseUrl = options.baseUrl || '/api/clients'
-    this.url = baseUrl.replace(HTTP_PROTOCOL_REGEX, 'ws').replace(HTTPS_PROTOCOL_REGEX, 'wss')
-    this.reconnectInterval = options.reconnectInterval || 3000
-    this.maxReconnectAttempts = options.maxReconnectAttempts || 5
-  }
-
-  /**
-   * 连接 WebSocket
-   */
-  connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        this.ws = new WebSocket(this.url)
-
-        this.ws.onopen = () => {
-          this.isOpen = true
-          this.reconnectAttempts = 0
-          // 发送获取数据请求
-          this.ws!.send('get')
-          resolve()
-        }
-
-        this.ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data) as WebSocketRealtimeResponse
-            if (data?.status === 'success' || data?.status === 'error')
-              this.listeners.forEach(listener => listener(data))
-          }
-          catch {
-            // Ignore parse errors
-          }
-        }
-
-        this.ws.onerror = (error) => {
-          this.errorListeners.forEach(listener => listener(error))
-          if (!this.isOpen) {
-            reject(new ApiError('WebSocket connection failed', 'error'))
-          }
-        }
-
-        this.ws.onclose = () => {
-          this.isOpen = false
-          if (this.shouldReconnect)
-            this.attemptReconnect()
-        }
-      }
-      catch (error) {
-        reject(new ApiError(`WebSocket error: ${error instanceof Error ? error.message : String(error)}`, 'error'))
-      }
-    })
-  }
-
-  /**
-   * 尝试重连
-   */
-  private attemptReconnect(): void {
-    if (!this.shouldReconnect || this.reconnectTimer || this.reconnectAttempts >= this.maxReconnectAttempts)
-      return
-
-    this.reconnectAttempts++
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = null
-      this.connect().catch(() => {
-        // Ignore reconnect errors
-      })
-    }, this.reconnectInterval)
-  }
-
-  /**
-   * 请求数据
-   */
-  requestData(): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send('get')
-    }
-  }
-
-  /**
-   * 订阅实时数据
-   */
-  subscribe(callback: (data: WebSocketRealtimeResponse) => void): () => void {
-    this.listeners.add(callback)
-    return () => {
-      this.listeners.delete(callback)
-    }
-  }
-
-  /**
-   * 订阅错误事件
-   */
-  onError(callback: (error: Event) => void): () => void {
-    this.errorListeners.add(callback)
-    return () => {
-      this.errorListeners.delete(callback)
-    }
-  }
-
-  /**
-   * 关闭连接
-   */
-  close(): void {
-    this.shouldReconnect = false
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
-    }
-    if (this.ws) {
-      this.ws.close()
-      this.ws = null
-    }
-    this.isOpen = false
-    this.listeners.clear()
-    this.errorListeners.clear()
-  }
-
-  /**
-   * 获取连接状态
-   */
-  get connected(): boolean {
-    return this.isOpen && this.ws?.readyState === WebSocket.OPEN
-  }
-}
-
 // ==================== 单例实例 ====================
 
 let sharedApiInstance: KomariApi | null = null
@@ -620,13 +465,3 @@ export function getSharedApi(options?: ApiClientOptions): KomariApi {
   }
   return sharedApiInstance
 }
-
-/**
- * 重置共享实例
- */
-export function resetSharedApi(): void {
-  sharedApiInstance = null
-}
-
-// 默认导出
-export default KomariApi

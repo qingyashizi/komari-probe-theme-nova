@@ -6,8 +6,8 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { getAuthSession, requirePermission, setAuthSessionFromLogin, verifyLogin } from '@/services/auth.service'
 
-export type ThemeMode = 'auto' | 'light' | 'dark'
-export type ManagedThemeMode = 'beijing' | 'light' | 'dark'
+type ThemeMode = 'auto' | 'light' | 'dark'
+type ManagedThemeMode = 'beijing' | 'light' | 'dark'
 type BackgroundOrientation = 'landscape' | 'portrait'
 type BackgroundOrientationMode = 'auto' | BackgroundOrientation
 export type GeneralCardKey
@@ -74,7 +74,7 @@ export type DetailMetricCardKey
     | 'totalTraffic'
     | 'trafficQuota'
 
-export type NodeListMetadataField
+type NodeListMetadataField
   = | 'provider'
     | 'region'
     | 'city'
@@ -120,7 +120,7 @@ export interface GlassCustomColors {
   darkBorder: string
 }
 
-export interface ChartDashboardTemplate {
+interface ChartDashboardTemplate {
   cards: ChartDashboardCardKey[]
 }
 

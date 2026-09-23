@@ -11,7 +11,3 @@ export const SECURITY_CONFIG = {
     secondaryPasswordSessionKey: 'komari-theme-export-secondary-password-verified',
   },
 } as const
-
-export const PRIVATE_HOME_TOOL_KEYS = ['topology', 'providerValue', 'healthSummary', 'snapshotExport'] as const
-
-export type PrivateHomeToolKey = typeof PRIVATE_HOME_TOOL_KEYS[number]

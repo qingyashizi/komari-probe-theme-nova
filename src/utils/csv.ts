@@ -4,13 +4,9 @@ const CSV_QUOTE_REGEX = /"/g
 // eslint-disable-next-line regexp/no-useless-flag
 const CSV_FORMULA_INJECTION_REGEX = /^\s*[=+\-@|]/i
 
-export function sanitizeCsvCell(value: unknown): string {
+function sanitizeCsvCell(value: unknown): string {
   const text = String(value ?? '')
   return CSV_FORMULA_INJECTION_REGEX.test(text) ? `'${text}` : text
-}
-
-export function sanitizeCsvValue(value: unknown): string {
-  return sanitizeCsvCell(value)
 }
 
 export function escapeCsvCell(value: unknown): string {
@@ -18,8 +14,4 @@ export function escapeCsvCell(value: unknown): string {
   if (CSV_ESCAPE_NEEDED_REGEX.test(text))
     return `"${text.replace(CSV_QUOTE_REGEX, '""')}"`
   return text
-}
-
-export function toCsvRows(rows: Array<Array<unknown>>): string {
-  return rows.map(row => row.map(escapeCsvCell).join(',')).join('\r\n')
 }

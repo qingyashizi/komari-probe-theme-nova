@@ -6,7 +6,7 @@ import { gpuUsageFromStatus } from '@/utils/gpuHelper'
 import { parseNodeGroups } from '@/utils/groupHelper'
 
 /** 流量限制类型 */
-export type TrafficLimitType = 'up' | 'down' | 'min' | 'max' | 'sum'
+type TrafficLimitType = 'up' | 'down' | 'min' | 'max' | 'sum'
 
 /** 节点完整信息（合并 Client 和 Status） */
 export interface NodeData {
@@ -72,7 +72,7 @@ export interface NodeData {
 }
 
 /** WebSocket 连接状态 */
-export type WsConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
+type WsConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 
 /** 状态数据（用于更新） */
 interface StatusData {

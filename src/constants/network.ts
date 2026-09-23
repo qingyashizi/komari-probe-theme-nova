@@ -11,5 +11,3 @@ export const NETWORK_CONFIG = {
     attempts: 1,
   },
 } as const
-
-export const MAX_CONCURRENT_REQUESTS = NETWORK_CONFIG.concurrency.maxRequests

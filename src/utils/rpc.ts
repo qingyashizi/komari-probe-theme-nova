@@ -65,7 +65,7 @@ export interface MethodMeta {
 }
 
 /** 参数元数据 */
-export interface ParamMeta {
+interface ParamMeta {
   name: string
   type: string
   description: string
@@ -149,7 +149,7 @@ export interface NodeStatusPing {
   max: number
 }
 
-export interface GpuDetailedInfo {
+interface GpuDetailedInfo {
   name?: string
   device_name?: string
   device_index?: number
@@ -1019,14 +1019,4 @@ export function getSharedRpc(): KomariRpc {
     sharedRpc = new KomariRpc()
   }
   return sharedRpc
-}
-
-/**
- * 重置共享实例
- */
-export function resetSharedRpc(): void {
-  if (sharedRpc) {
-    sharedRpc.close()
-    sharedRpc = null
-  }
 }

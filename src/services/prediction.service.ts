@@ -2,7 +2,7 @@ import type { StatusRecord } from '@/utils/rpc'
 import { LOAD_CONFIG } from '@/constants/load'
 import { TIME_MS } from '@/constants/time'
 
-export interface NodeDiskPrediction {
+interface NodeDiskPrediction {
   daysUntilFull: number
   dailyGrowthBytes: number
   currentDiskBytes: number
@@ -11,7 +11,7 @@ export interface NodeDiskPrediction {
   confidence: number
 }
 
-export type DiskPredictionUnavailableReason
+type DiskPredictionUnavailableReason
   = | 'no_samples'
     | 'insufficient_samples'
     | 'insufficient_duration'
@@ -163,8 +163,4 @@ export function analyzeDiskPrediction(records: readonly StatusRecord[], fallback
       confidence,
     },
   }
-}
-
-export function buildDiskPrediction(records: readonly StatusRecord[], fallbackDiskTotal = 0): NodeDiskPrediction | null {
-  return analyzeDiskPrediction(records, fallbackDiskTotal).prediction
 }

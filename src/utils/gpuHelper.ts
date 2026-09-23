@@ -34,7 +34,7 @@ function usagesFromDetails(details: unknown): number[] {
     .filter((value): value is number => value != null)
 }
 
-export function gpuUsageFromUnknown(value: unknown): number {
+function gpuUsageFromUnknown(value: unknown): number {
   const direct = asFiniteNumber(value)
   if (direct != null)
     return direct

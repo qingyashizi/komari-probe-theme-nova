@@ -115,7 +115,7 @@ export function getLossToneTextClass(loss: number): string {
   return toneTextClass(getLossToneLevel(loss))
 }
 
-export function latestFiniteValue(values: Array<number | null | undefined>): number | null {
+function latestFiniteValue(values: Array<number | null | undefined>): number | null {
   for (let index = values.length - 1; index >= 0; index--) {
     const value = values[index]
     if (typeof value === 'number' && Number.isFinite(value))

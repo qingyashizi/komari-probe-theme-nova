@@ -2,7 +2,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import dayjs from 'dayjs'
 import { computed, ref, toValue } from 'vue'
 
-export const CUSTOM_LOAD_CHART_VIEW = '自定义'
+const CUSTOM_LOAD_CHART_VIEW = '自定义'
 
 interface LoadChartView {
   label: string

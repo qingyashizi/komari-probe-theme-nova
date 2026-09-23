@@ -1,4 +1,4 @@
-import { escapeCsvCell, toCsvRows } from '@/utils/csv'
+import { escapeCsvCell } from '@/utils/csv'
 
 const UTF8_BOM = String.fromCharCode(0xFEFF)
 const JSON_NEWLINE_REGEX = /\n/g
@@ -6,13 +6,6 @@ const JSON_NEWLINE_REGEX = /\n/g
 export interface SnapshotCsvColumn<T> {
   label: string
   value: (row: T) => string | number
-}
-
-export function buildSnapshotCsv<T>(columns: Array<SnapshotCsvColumn<T>>, rows: T[]): string {
-  return toCsvRows([
-    columns.map(column => column.label),
-    ...rows.map(row => columns.map(column => column.value(row))),
-  ])
 }
 
 export async function buildSnapshotCsvAsync<T>(columns: Array<SnapshotCsvColumn<T>>, rows: T[], yieldToBrowser: () => Promise<void>, chunkSize = 250): Promise<string> {

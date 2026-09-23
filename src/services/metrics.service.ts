@@ -53,11 +53,11 @@ const metricDefinitionsCache = new SharedCache<MetricDefinition[]>({
   cleanupInterval: CACHE_CONFIG.cleanup.interval,
 })
 
-export function getMetricDefinitionsRequestKey(): string {
+function getMetricDefinitionsRequestKey(): string {
   return 'metrics:definitions'
 }
 
-export function getQueryMetricsRequestKey(params: MetricQueryParams): string {
+function getQueryMetricsRequestKey(params: MetricQueryParams): string {
   return [
     'metrics:query',
     cachePart(normalizeMetricKeys(params)),
@@ -74,7 +74,7 @@ export function getQueryMetricsRequestKey(params: MetricQueryParams): string {
   ].join(':')
 }
 
-export function getPingMetricStatsRequestKey(params: PingMetricStatsParams): string {
+function getPingMetricStatsRequestKey(params: PingMetricStatsParams): string {
   return [
     'metrics:ping-stats',
     cachePart(params.uuid ?? params.entity_id),
@@ -88,7 +88,7 @@ export function getPingMetricStatsRequestKey(params: PingMetricStatsParams): str
   ].join(':')
 }
 
-export function getPublicPingTasksRequestKey(): string {
+function getPublicPingTasksRequestKey(): string {
   return 'metrics:public-ping-tasks'
 }
 

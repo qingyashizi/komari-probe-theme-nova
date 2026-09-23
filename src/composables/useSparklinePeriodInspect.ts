@@ -8,7 +8,7 @@ export interface SparklinePeriodInspect {
 
 const MOUSE_COMPAT_MS = 700
 
-export function sparklineIndexFromClientX(element: HTMLElement, clientX: number, barCount: number): number {
+function sparklineIndexFromClientX(element: HTMLElement, clientX: number, barCount: number): number {
   const count = Math.max(barCount, 1)
   const last = Math.max(count - 1, 0)
   const rect = element.getBoundingClientRect()

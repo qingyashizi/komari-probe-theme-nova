@@ -11,12 +11,8 @@ function normalizePositiveInteger(value: string | number | null | undefined, fal
   return Math.floor(numericValue)
 }
 
-export function getAuditLogsRequestKey(page = 1, limit = DEFAULT_AUDIT_LOG_LIMIT, msgType?: string): string {
+function getAuditLogsRequestKey(page = 1, limit = DEFAULT_AUDIT_LOG_LIMIT, msgType?: string): string {
   return `audit:logs:${page}:${limit}:${msgType?.trim() || 'all'}`
-}
-
-export function abortAuditLogs(page = 1, limit = DEFAULT_AUDIT_LOG_LIMIT, msgType?: string): void {
-  requestManager.abort(getAuditLogsRequestKey(page, limit, msgType))
 }
 
 export async function loadAuditLogs(params: { page?: number | string, limit?: number | string, msgType?: string } = {}): Promise<AuditLogsResponse> {

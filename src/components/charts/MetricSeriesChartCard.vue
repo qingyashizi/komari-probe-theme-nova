@@ -9,7 +9,7 @@ import '@/utils/echarts'
 type MetricChartTone = 'rose' | 'amber' | 'emerald' | 'cyan' | 'sky' | 'violet' | 'orange' | 'slate'
 type MetricValueKind = 'bytes' | 'bytesPerSecond' | 'count' | 'milliseconds' | 'percent' | 'temperature'
 
-export interface MetricChartSeriesData {
+interface MetricChartSeriesData {
   name: string
   color: string
   kind: MetricValueKind

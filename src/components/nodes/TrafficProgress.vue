@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { formatBytes } from '@/utils/helper'
 
-export interface TrafficProgressProps {
+interface TrafficProgressProps {
   upload: number
   download: number
   trafficLimit: number

@@ -253,7 +253,7 @@ function jsonRpcResult(id: unknown, result: unknown) {
   return { jsonrpc: '2.0', id, result }
 }
 
-export function resolveKomariRpc(
+function resolveKomariRpc(
   method: string,
   params: Record<string, unknown> | undefined,
   options: VisualFixtureOptions = {},

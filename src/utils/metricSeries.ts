@@ -35,7 +35,7 @@ export function metricTags(value: { tag?: Record<string, unknown>, tags?: Record
   }
 }
 
-export function metricTagsKey(tags: Record<string, unknown> | null | undefined): string {
+function metricTagsKey(tags: Record<string, unknown> | null | undefined): string {
   if (!tags)
     return ''
 
@@ -44,15 +44,7 @@ export function metricTagsKey(tags: Record<string, unknown> | null | undefined):
     .map(key => [key, stringifyTagValue(tags[key])]))
 }
 
-export function metricSeriesKey(series: Pick<MetricSeries, 'metric_key' | 'entity_id' | 'tag' | 'tags'>): string {
-  return `${series.metric_key}:${series.entity_id}:${metricTagsKey(metricTags(series))}`
-}
-
-export function metricSeriesDataKey(series: Pick<MetricSeries, 'metric_key' | 'entity_id'>, point: MetricPoint): string {
-  return `${series.metric_key}:${series.entity_id}:${point.time}:${metricTagsKey(metricTags(point))}`
-}
-
-export function normalizeMetricSeries(series: MetricSeries): NormalizedMetricSeries[] {
+function normalizeMetricSeries(series: MetricSeries): NormalizedMetricSeries[] {
   const groups = new Map<string, { tags: Record<string, unknown>, points: MetricPoint[] }>()
   const baseTags = metricTags(series)
 
@@ -154,21 +146,4 @@ export function orderPingTasksByBackend<T extends Pick<PingTaskInfo, 'id'>>(
 ): T[] {
   const taskOrder = createPingTaskOrderMap(backendTasks)
   return [...tasks].sort((left, right) => comparePingTaskIds(String(left.id), String(right.id), taskOrder))
-}
-
-export function pingMetricStatKey(stat: Pick<PingMetricTaskStats, 'entity_id' | 'task_id'>): string {
-  return `${stat.entity_id}:${stat.task_id}`
-}
-
-export function applyMetricEwma(values: Array<number | null>, alpha = 0.35): Array<number | null> {
-  const safeAlpha = Number.isFinite(alpha) && alpha > 0 && alpha <= 1 ? alpha : 0.35
-  let previous: number | null = null
-
-  return values.map((value) => {
-    if (value === null || value === undefined || !Number.isFinite(value))
-      return null
-
-    previous = previous === null ? value : safeAlpha * value + (1 - safeAlpha) * previous
-    return previous
-  })
 }

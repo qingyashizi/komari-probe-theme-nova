@@ -39,7 +39,7 @@ function generateSessionId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`
 }
 
-export function getVisitorAuditSessionId(): string {
+function getVisitorAuditSessionId(): string {
   if (memorySessionId)
     return memorySessionId
 

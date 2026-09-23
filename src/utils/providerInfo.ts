@@ -1,11 +1,11 @@
-export interface ProviderInfo {
+interface ProviderInfo {
   name: string
   icon: string
 }
 
-export type ProviderMatchSource = 'custom-alias' | 'metadata' | 'asn' | 'org' | 'fallback-org'
+type ProviderMatchSource = 'custom-alias' | 'metadata' | 'asn' | 'org' | 'fallback-org'
 
-export interface ProviderMatch extends ProviderInfo {
+interface ProviderMatch extends ProviderInfo {
   source: ProviderMatchSource
   matched?: string
 }
@@ -239,21 +239,21 @@ function detectProviderInEntries(text: string, entries: ProviderEntry[], source:
   return null
 }
 
-export function detectProvider(text: string): ProviderMatch | null {
+function detectProvider(text: string): ProviderMatch | null {
   return detectProviderInEntries(text, PROVIDER_DB, 'metadata')
 }
 
-export function detectProviderByAsn(asn?: string): ProviderMatch | null {
+function detectProviderByAsn(asn?: string): ProviderMatch | null {
   const key = normalizeAsn(asn)
   const provider = key ? ASN_PROVIDER_DB[key] : null
   return provider ? { ...provider, source: 'asn', matched: key } : null
 }
 
-export function cleanProviderOrg(org: string): string {
+function cleanProviderOrg(org: string): string {
   return org.replace(ASN_PREFIX_REGEX, '').trim()
 }
 
-export function providerSourceLabel(source: ProviderMatchSource): string {
+function providerSourceLabel(source: ProviderMatchSource): string {
   return SOURCE_LABELS[source]
 }
 

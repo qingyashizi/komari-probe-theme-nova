@@ -16,7 +16,7 @@ interface QueuedRequest<T> {
   shouldRetry: (error: unknown) => boolean
 }
 
-export interface RequestManagerOptions {
+interface RequestManagerOptions {
   timeout?: number
   retryAttempts?: number
   shouldRetry?: (error: unknown) => boolean
@@ -38,7 +38,7 @@ function waitForAbort(signal: AbortSignal): Promise<never> {
   })
 }
 
-export class RequestManager {
+class RequestManager {
   private readonly pending = new Map<string, PendingRequest<unknown>>()
   private readonly queue: Array<QueuedRequest<unknown>> = []
   private activeCount = 0

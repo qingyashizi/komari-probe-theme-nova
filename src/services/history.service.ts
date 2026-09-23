@@ -36,7 +36,7 @@ function isStatusRecordsMap(records: StatusRecordsPayload): records is Record<st
   return !Array.isArray(records)
 }
 
-export function normalizeStatusRecordsPayload(records: StatusRecordsPayload | undefined): StatusRecord[] {
+function normalizeStatusRecordsPayload(records: StatusRecordsPayload | undefined): StatusRecord[] {
   if (!records)
     return []
 
@@ -49,15 +49,15 @@ export function normalizeStatusRecordsPayload(records: StatusRecordsPayload | un
   return []
 }
 
-export function getLoadRecordsRequestKey(uuid: string | undefined, hours: number, maxCount?: number): string {
+function getLoadRecordsRequestKey(uuid: string | undefined, hours: number, maxCount?: number): string {
   return `history:load:${cachePart(uuid)}:${normalizeHours(hours)}:${cachePart(normalizeMaxCount(maxCount))}`
 }
 
-export function getNodeLoadRecordsRequestKey(uuid: string, hours: number, maxCount?: number): string {
+function getNodeLoadRecordsRequestKey(uuid: string, hours: number, maxCount?: number): string {
   return `history:node-load:${uuid}:${normalizeHours(hours)}:${cachePart(normalizeMaxCount(maxCount))}`
 }
 
-export function getPingRecordsRequestKey(hours: number, maxCount?: number, uuid?: string): string {
+function getPingRecordsRequestKey(hours: number, maxCount?: number, uuid?: string): string {
   return `history:ping:${cachePart(uuid)}:${normalizeHours(hours)}:${cachePart(normalizeMaxCount(maxCount))}`
 }
 
@@ -73,7 +73,7 @@ export function abortPingRecords(hours: number, maxCount?: number, uuid?: string
   requestManager.abort(getPingRecordsRequestKey(hours, maxCount, uuid))
 }
 
-export function normalizeStatusRecord(record: Partial<StatusRecord>): StatusRecord | null {
+function normalizeStatusRecord(record: Partial<StatusRecord>): StatusRecord | null {
   if (!record.client || !record.time)
     return null
 
@@ -106,7 +106,7 @@ export function normalizeStatusRecord(record: Partial<StatusRecord>): StatusReco
   }
 }
 
-export function normalizeStatusRecords(records: Array<Partial<StatusRecord>> | undefined): StatusRecord[] {
+function normalizeStatusRecords(records: Array<Partial<StatusRecord>> | undefined): StatusRecord[] {
   return (records ?? [])
     .map(normalizeStatusRecord)
     .filter((record): record is StatusRecord => Boolean(record))

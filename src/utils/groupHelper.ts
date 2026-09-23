@@ -15,9 +15,3 @@ export function parseNodeGroups(group: string | null | undefined): string[] {
 
   return groups
 }
-
-export function isNodeInGroup(group: string | null | undefined, selectedGroup: string): boolean {
-  if (selectedGroup === 'all')
-    return true
-  return parseNodeGroups(group).includes(selectedGroup)
-}

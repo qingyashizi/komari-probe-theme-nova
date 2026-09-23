@@ -12,7 +12,7 @@ function isNear(value: number, target: number, epsilon = 0.02): boolean {
  * 不能用横屏 `innerWidth / screen.width`：iOS 的 screen.width 常是竖屏短边，横屏会误判成 ~2。
  * aA 缩小时 layout 短边变大，visualViewport.scale 却常常仍是 1，要用 layout / visual 短边比。
  */
-export function getSafeAreaZoomOutFactor(): number {
+function getSafeAreaZoomOutFactor(): number {
   if (typeof window === 'undefined')
     return 1
 
@@ -59,7 +59,7 @@ export function getSafeAreaZoomOutFactor(): number {
   return Math.min(UI_CONFIG.safeArea.zoomOutFactorMax, Math.round(factor * 100) / 100)
 }
 
-export function applySafeAreaZoomOutFactor(): void {
+function applySafeAreaZoomOutFactor(): void {
   if (typeof document === 'undefined')
     return
   document.documentElement.style.setProperty('--komari-safe-area-zoom', String(getSafeAreaZoomOutFactor()))

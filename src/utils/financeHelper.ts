@@ -59,7 +59,7 @@ export const DEFAULT_EXCHANGE_RATES: ExchangeRates = {
   CAD: 0.19,
 }
 
-export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
+const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
   CNY: '¥',
   USD: '$',
   HKD: 'HK$',
@@ -123,7 +123,7 @@ export function normalizeCurrency(currency: string | null | undefined): Currency
   return 'CNY'
 }
 
-export function getTodayDateKey(date = new Date()): string {
+function getTodayDateKey(date = new Date()): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -294,19 +294,6 @@ export function calculateMonthlyCostCNY(
   return priceCNY / billingCycle * 30
 }
 
-export function calculateTotalMonthlyCostCNY(
-  nodes: NodeData[],
-  exchangeRates: ExchangeRates,
-  excludeFreeTags = true,
-): number {
-  return nodes.reduce((sum, node) => {
-    if (excludeFreeTags && isFreeNode(node))
-      return sum
-
-    return sum + calculateMonthlyCostCNY(node, exchangeRates)
-  }, 0)
-}
-
 export function calculatePeriodCostCNY(
   node: NodeData,
   exchangeRates: ExchangeRates,
@@ -421,7 +408,7 @@ export async function getDailyExchangeRates(): Promise<{
   return exchangeRatesInflight
 }
 
-export function getPriceCNY(node: NodeData, exchangeRates: ExchangeRates): number {
+function getPriceCNY(node: NodeData, exchangeRates: ExchangeRates): number {
   const price = Number(node.price)
   if (!Number.isFinite(price) || price <= 0)
     return 0

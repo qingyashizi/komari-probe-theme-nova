@@ -84,7 +84,7 @@ export function isHighLoadNode(node: NodeData, threshold: number): boolean {
   return getHighLoadMetrics(node, threshold).length > 0
 }
 
-export function hasValidExpiry(node: Pick<NodeData, 'expired_at'>): boolean {
+function hasValidExpiry(node: Pick<NodeData, 'expired_at'>): boolean {
   if (!node.expired_at)
     return false
 
@@ -117,28 +117,7 @@ export function isTrafficWarningNode(node: NodeData, threshold: number): boolean
   return getTrafficUsedPercentage(node) >= clampThreshold(threshold, 80)
 }
 
-export function getTopNodeBy(nodes: readonly NodeData[], selector: (node: NodeData) => number): TopNodeMetric | null {
-  let topNode: NodeData | null = null
-  let topValue = -Infinity
-
-  for (const node of nodes) {
-    const value = selector(node)
-    if (!Number.isFinite(value))
-      continue
-
-    if (value > topValue) {
-      topValue = value
-      topNode = node
-    }
-  }
-
-  if (!topNode)
-    return null
-
-  return { node: topNode, value: Math.max(0, topValue) }
-}
-
-export function clampThreshold(value: number, fallback: number): number {
+function clampThreshold(value: number, fallback: number): number {
   if (!Number.isFinite(value))
     return fallback
 

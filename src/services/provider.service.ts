@@ -16,7 +16,7 @@ export function getNodeIps(node: NodeData): string[] {
   return [node.ipv4, node.ipv6].filter((ip): ip is string => Boolean(ip?.trim()))
 }
 
-export function getProviderMetadataText(node: NodeData): string {
+function getProviderMetadataText(node: NodeData): string {
   return [node.name, node.public_remark, node.remark, node.tags, node.group, node.region]
     .filter(Boolean)
     .join(' ')

@@ -4,11 +4,10 @@ import type { StatusRecord } from '@/utils/rpc'
 import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
 import { LOAD_CONFIG, LOAD_RECORD_MAX_COUNT } from '@/constants/load'
 import { abortLoadRecords, abortNodeLoadRecords, buildRecordsByClient, loadLoadRecords, loadNodeLoadRecords } from '@/services/history.service'
-import { analyzeDiskPrediction, buildDiskPrediction } from '@/services/prediction.service'
+import { analyzeDiskPrediction } from '@/services/prediction.service'
 import { useAppStore } from '@/stores/app'
 
-export { analyzeDiskPrediction, buildDiskPrediction, loadNodeLoadRecords }
-export type { DiskPredictionState, NodeDiskPrediction } from '@/services/prediction.service'
+export { loadNodeLoadRecords }
 
 interface SharedLoadRecordsState {
   recordsByClient: Map<string, StatusRecord[]>
@@ -202,19 +201,6 @@ function retainSharedLoadRecordsEntry(hours: number, maxCount?: number): () => v
       abortSharedLoadRecordsEntry(entry, hours, maxCount)
     }
   }
-}
-
-export async function loadSharedNodeLoadRecords(hours: number, maxCount: number | undefined = LOAD_RECORD_MAX_COUNT): Promise<Map<string, StatusRecord[]>> {
-  const safeHours = Math.max(1, Math.floor(hours))
-  const safeMaxCount = normalizeMaxCount(maxCount)
-  const entry = getSharedLoadRecordsEntry(getSharedLoadRecordsKey(safeHours, safeMaxCount))
-  const shouldLoadRecords = !entry.data.value
-    || Date.now() - entry.lastFetchedAt >= LOAD_RECORD_REFRESH_INTERVAL_MS
-
-  if (shouldLoadRecords)
-    await loadSharedLoadRecords(entry, safeHours, safeMaxCount)
-
-  return entry.data.value?.recordsByClient ?? new Map<string, StatusRecord[]>()
 }
 
 export function useNodeLoadStats(

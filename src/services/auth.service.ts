@@ -2,7 +2,7 @@ import type { MeInfo } from '@/utils/api'
 import { SECURITY_CONFIG } from '@/constants/security'
 import { getSharedApi } from '@/utils/api'
 
-export type AuthStatus = 'unknown' | 'guest' | 'authenticated' | 'error'
+type AuthStatus = 'unknown' | 'guest' | 'authenticated' | 'error'
 export type PermissionKey
   = | 'advancedTools'
     | 'snapshotExport'
@@ -55,14 +55,6 @@ function createSessionFromMe(user: MeInfo): AuthSession {
 
 export function getAuthSession(): AuthSession {
   return authSession
-}
-
-export function isAuthenticated(): boolean {
-  return authSession.authenticated
-}
-
-export function getCurrentUser(): MeInfo | null {
-  return authSession.user
 }
 
 export function setAuthSessionFromLogin(loggedIn: boolean, user: MeInfo | null = null): AuthSession {

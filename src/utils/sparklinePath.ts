@@ -25,7 +25,7 @@ function percentileSorted(sorted: number[], percentile: number): number {
   return lowerValue + (upperValue - lowerValue) * (position - lowerIndex)
 }
 
-export function robustDomain(values: number[]): { min: number, max: number } {
+function robustDomain(values: number[]): { min: number, max: number } {
   if (!values.length)
     return { min: 0, max: 1 }
 
