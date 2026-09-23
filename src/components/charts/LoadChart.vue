@@ -2,7 +2,7 @@
 import type { ChartDashboardCardKey } from '@/stores/app'
 import type { NormalizedMetricSeries } from '@/utils/metricSeries'
 import type { RecordFormat } from '@/utils/recordHelper'
-import type { MetricQueryParams, MetricSeries, PingTaskInfo, StatusRecord } from '@/utils/rpc'
+import type { MetricQueryParams, MetricSeries, StatusRecord } from '@/utils/rpc'
 import { Icon } from '@iconify/vue'
 import { useIntervalFn } from '@vueuse/core'
 import dayjs from 'dayjs'
@@ -17,10 +17,11 @@ import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLoadChartRange } from '@/composables/useLoadChartRange'
+import { useLoadMetricCatalog } from '@/composables/useLoadMetricCatalog'
 import { useRecentNodeStatus } from '@/composables/useRecentNodeStatus'
 import { loadNodeLoadRecords, useNodeLoadStats } from '@/composables/useNodeLoadStats'
 import { LOAD_RECORD_MAX_COUNT } from '@/constants/load'
-import { loadMetricDefinitions, loadPublicPingTasks, queryMetrics } from '@/services/metrics.service'
+import { loadMetricDefinitions, queryMetrics } from '@/services/metrics.service'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { getChartSeriesPalette, getLoadChartPalette } from '@/utils/chartPalette'
@@ -155,8 +156,6 @@ const {
 // 数据状态
 const metricData = shallowRef<RecordFormat[] | null>(null)
 const rawMetricSeries = shallowRef<NormalizedMetricSeries[]>([])
-const availableMetricKeys = shallowRef<Set<string>>(new Set())
-const pingTasks = shallowRef<PingTaskInfo[]>([])
 const loading = ref(false)
 const isInitialLoad = ref(true) // 是否为首次加载（用于控制实时模式下的 NSpin 显示）
 const error = ref<string | null>(null)
@@ -201,6 +200,7 @@ const {
   error: recentStatusError,
   fetchRecentStatus,
 } = useRecentNodeStatus(() => props.uuid)
+const { availableMetricKeys, pingTasks, loadMetricCatalog } = useLoadMetricCatalog()
 
 // ==================== 数据获取 ====================
 
@@ -480,15 +480,6 @@ function metricSeriesToRecordFormat(seriesList: MetricSeries[]): RecordFormat[] 
 interface MetricHistoryData {
   records: RecordFormat[]
   series: NormalizedMetricSeries[]
-}
-
-async function loadMetricCatalog(): Promise<void> {
-  const [definitions, tasks] = await Promise.all([
-    loadMetricDefinitions().catch(() => []),
-    loadPublicPingTasks().catch(() => []),
-  ])
-  availableMetricKeys.value = new Set(definitions.map(definition => definition.name))
-  pingTasks.value = tasks
 }
 
 async function loadMetricHistoryRecords(params: Pick<MetricQueryParams, 'hours' | 'start' | 'end'>): Promise<MetricHistoryData | null> {
