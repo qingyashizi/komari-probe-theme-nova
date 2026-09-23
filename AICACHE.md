@@ -15,7 +15,8 @@
 - 状态：in-progress，`refactor/theme-nova-source-layout`。
 - 目标：按业务域整理 `src/components/`，随后将 `LoadChart` 的数据与 ECharts option 组合逻辑迁至 composables，保持公开路由、交互与视觉不变。
 - 已完成：第一阶段将业务组件归入 `layout`、`nodes`、`charts`、`earth`、`tools`、`content`，`components/ui` 保持不动；已更新所有 `src` import。
-- 验证待执行：lint、type-check/build、Playwright 视觉回归。
+- 验证：`git diff --check` 通过；当前环境缺少 `bun` 且不存在 `node_modules`，因此 lint、type-check/build、Playwright 视觉回归待具备项目运行时后执行。
+- 后续：在可运行 Bun 的环境中，以 `LoadChart` 为单一目标，将纯记录转换、请求状态和 ECharts option 组合按 utils/composable/展示组件分批拆出；每一批均需类型、构建和视觉回归通过后再提交。
 
 - 状态：done，v3.3.19 已通过 GitHub API 发布。
 - 内容：三网新版 Sparkline 悬停/点按查看每个时间段延迟；粗指针停留提示；折线区域禁止选中复制；忽略 iOS 兼容鼠标、按 rowKey 处理 pointerleave、不 capture 以免挡住滚动。
