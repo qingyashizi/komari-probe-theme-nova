@@ -16,6 +16,7 @@ import { Empty } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useLoadChartRange } from '@/composables/useLoadChartRange'
 import { loadNodeLoadRecords, useNodeLoadStats } from '@/composables/useNodeLoadStats'
 import { LOAD_RECORD_MAX_COUNT } from '@/constants/load'
 import { loadMetricDefinitions, loadPublicPingTasks, queryMetrics } from '@/services/metrics.service'
@@ -79,7 +80,6 @@ const LOAD_METRIC_KEYS = [
   'ping.loss',
 ] as const
 
-const CUSTOM_VIEW_LABEL = '自定义'
 const PING_METRIC_KEYS = ['ping.latency_ms', 'ping.loss'] as const
 const METRIC_HISTORY_MAX_POINTS = 700
 const REALTIME_METRIC_REFRESH_MS = 30_000
@@ -93,12 +93,6 @@ interface MetricChartSeriesData {
 }
 
 type LoadMetricKey = typeof LOAD_METRIC_KEYS[number]
-
-interface CustomRange {
-  start: dayjs.Dayjs
-  end: dayjs.Dayjs
-  hours: number
-}
 
 // 图表主题相关颜色
 const chartThemeColors = computed(() => ({
@@ -146,76 +140,17 @@ const baseTooltipConfig = computed(() => ({
 const chartMargin = { top: 30, right: 24, bottom: 32, left: 56 }
 const chartMarginWithLegend = { top: 30, right: 24, bottom: 52, left: 56 }
 
-// 视图选项
-const presetViews = [
-  { label: '4 小时', hours: 4 },
-  { label: '1 天', hours: 24 },
-  { label: '7 天', hours: 168 },
-  { label: '30 天', hours: 720 },
-]
-
-// 可用视图列表
-const availableViews = computed(() => {
-  const views: { label: string, hours?: number }[] = [{ label: '实时' }]
-  const maxHours = maxRecordPreserveTime.value
-
-  for (const v of presetViews) {
-    if (maxHours >= v.hours) {
-      views.push({ label: v.label, hours: v.hours })
-    }
-  }
-
-  const maxPreset = presetViews.at(-1)
-  if (maxPreset && maxHours > maxPreset.hours) {
-    const label = maxHours % 24 === 0
-      ? `${Math.floor(maxHours / 24)} 天`
-      : `${maxHours} 小时`
-    views.push({ label, hours: maxHours })
-  }
-  else if (maxHours > 4 && !presetViews.some(v => v.hours === maxHours)) {
-    const label = maxHours % 24 === 0
-      ? `${Math.floor(maxHours / 24)} 天`
-      : `${maxHours} 小时`
-    views.push({ label, hours: maxHours })
-  }
-
-  views.push({ label: CUSTOM_VIEW_LABEL })
-  return views
-})
-
-// 当前选中的视图
-const selectedView = ref<string>('实时')
-const customStartInput = ref('')
-const customEndInput = ref('')
-const selectedHours = computed(() => {
-  const view = availableViews.value.find(v => v.label === selectedView.value)
-  return view?.hours
-})
-const isRealtime = computed(() => selectedView.value === '实时')
-const isCustomRange = computed(() => selectedView.value === CUSTOM_VIEW_LABEL)
-const customRange = computed<CustomRange | null>(() => {
-  if (!customStartInput.value || !customEndInput.value)
-    return null
-
-  const start = dayjs(customStartInput.value)
-  const end = dayjs(customEndInput.value)
-  if (!start.isValid() || !end.isValid() || !end.isAfter(start))
-    return null
-
-  return {
-    start,
-    end,
-    hours: Math.max(1, Math.ceil(end.diff(start, 'hour', true))),
-  }
-})
-const customRangeError = computed(() => {
-  if (!isCustomRange.value || (!customStartInput.value && !customEndInput.value))
-    return ''
-  if (!customStartInput.value || !customEndInput.value)
-    return '请选择开始和结束时间'
-  return customRange.value ? '' : '结束时间必须晚于开始时间'
-})
-const effectiveHistoryHours = computed(() => isCustomRange.value ? customRange.value?.hours ?? 4 : selectedHours.value ?? 4)
+const {
+  availableViews,
+  selectedView,
+  customStartInput,
+  customEndInput,
+  isRealtime,
+  isCustomRange,
+  customRange,
+  customRangeError,
+  effectiveHistoryHours,
+} = useLoadChartRange(maxRecordPreserveTime)
 
 // 数据状态
 const remoteData = shallowRef<StatusRecord[]>([])
