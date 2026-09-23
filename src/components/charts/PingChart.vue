@@ -18,6 +18,7 @@ import { loadPingRecordsWithTasks } from '@/services/history.service'
 import { loadPingChartMetricPayload } from '@/services/ping-chart.service'
 import { useAppStore } from '@/stores/app'
 import { ACCESSIBLE_LINE_TYPES, getChartSeriesPalette } from '@/utils/chartPalette'
+import { buildMergedPingData } from '@/utils/pingChartRecords'
 import { cutPeakValues, interpolateNullsLinear } from '@/utils/recordHelper'
 import '@/utils/echarts' // 共享 ECharts 配置
 
@@ -193,85 +194,10 @@ async function fetchRecords() {
 
 // ==================== 数据处理 ====================
 
-const mergedData = computed(() => {
-  const data = remoteData.value
-  if (!data.length)
-    return []
-
-  const taskList = tasks.value
-
-  const taskIntervals = taskList
-    .map(t => t.interval)
-    .filter((v): v is number => typeof v === 'number' && v > 0)
-
-  const fallbackIntervalSec = taskIntervals.length ? Math.min(...taskIntervals) : 60
-  const toleranceMs = Math.min(
-    6000,
-    Math.max(800, Math.floor(fallbackIntervalSec * 1000 * 0.25)),
-  )
-
-  const grouped: Map<number, Record<string, unknown>> = new Map()
-  const anchors: number[] = []
-
-  for (const rec of data) {
-    const ts = dayjs(rec.time).valueOf()
-    let anchor: number | null = null
-
-    for (let index = anchors.length - 1; index >= 0; index--) {
-      const a = anchors[index]
-      if (a === undefined || ts - a > toleranceMs)
-        break
-      if (Math.abs(a - ts) <= toleranceMs) {
-        anchor = a
-        break
-      }
-    }
-
-    const useTs = anchor ?? ts
-    if (!grouped.has(useTs)) {
-      grouped.set(useTs, { time: dayjs(useTs).toISOString() })
-      if (anchor === null) {
-        anchors.push(useTs)
-      }
-    }
-
-    const group = grouped.get(useTs)!
-    group[rec.task_id] = rec.value < 0 ? null : rec.value
-  }
-
-  const merged = Array.from(grouped.values()).sort(
-    (a, b) => dayjs(a.time as string).valueOf() - dayjs(b.time as string).valueOf(),
-  )
-
-  const range = appliedCustomRange.value
-  if (isCustomRange.value && range) {
-    const fromTs = range.start.valueOf()
-    const toTs = range.end.valueOf()
-    return merged.filter((item) => {
-      const timestamp = dayjs(item.time as string).valueOf()
-      return timestamp >= fromTs && timestamp <= toTs
-    })
-  }
-
-  const hours = selectedHours.value
-  const lastItem = merged.at(-1)
-  const lastTs = lastItem ? dayjs(lastItem.time as string).valueOf() : dayjs().valueOf()
-  const fromTs = lastTs - hours * 3600_000
-
-  let startIdx = 0
-  for (let i = 0; i < merged.length; i++) {
-    const item = merged[i]
-    if (!item)
-      continue
-    const ts = dayjs(item.time as string).valueOf()
-    if (ts >= fromTs) {
-      startIdx = Math.max(0, i - 1)
-      break
-    }
-  }
-
-  return merged.slice(startIdx)
-})
+const mergedData = computed(() => buildMergedPingData(remoteData.value, tasks.value, {
+  customRange: isCustomRange.value && appliedCustomRange.value ? appliedCustomRange.value : null,
+  hours: selectedHours.value,
+}))
 
 const chartData = computed(() => {
   let data = mergedData.value
