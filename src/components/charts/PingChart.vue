@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PingChartCustomRange } from '@/composables/usePingChartRange'
-import type { MetricSeries, PingMetricTaskStats, PingRecord, PingTaskInfo } from '@/utils/rpc'
+import type { MetricQueryParams, PingRecord, PingTaskInfo } from '@/utils/rpc'
 import { Icon } from '@iconify/vue'
 import dayjs from 'dayjs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch, watchEffect } from 'vue'
@@ -15,10 +15,9 @@ import { usePingChartPresentation } from '@/composables/usePingChartPresentation
 import { PING_CHART_DEFAULT_CUSTOM_RANGE_HOURS, usePingChartRange } from '@/composables/usePingChartRange'
 import { PING_RECORD_MAX_COUNT } from '@/constants/load'
 import { loadPingRecordsWithTasks } from '@/services/history.service'
-import { loadPingMetricStats, loadPublicPingTasks, queryMetrics } from '@/services/metrics.service'
+import { loadPingChartMetricPayload } from '@/services/ping-chart.service'
 import { useAppStore } from '@/stores/app'
 import { ACCESSIBLE_LINE_TYPES, getChartSeriesPalette } from '@/utils/chartPalette'
-import { isPingMetric, normalizeMetricSeriesList, orderPingTasksByBackend, PING_LATENCY_METRIC, pingTaskId, pingTaskName } from '@/utils/metricSeries'
 import { cutPeakValues, interpolateNullsLinear } from '@/utils/recordHelper'
 import '@/utils/echarts' // 共享 ECharts 配置
 
@@ -121,133 +120,14 @@ function toggleSmoothInfoTooltip() {
   }
 }
 
-function normalizeMetricTaskId(taskId: string): number {
-  if (!taskId.trim())
-    return Number.NaN
+// ==================== 数据获取 ====================
 
-  const numericTaskId = Number(taskId)
-  if (Number.isFinite(numericTaskId))
-    return numericTaskId
-
-  let hash = 0
-  for (let index = 0; index < taskId.length; index++)
-    hash = (hash * 31 + taskId.charCodeAt(index)) | 0
-  return Math.abs(hash)
-}
-
-function normalizeMetricTask(stat: PingMetricTaskStats): PingTaskInfo {
-  return {
-    id: normalizeMetricTaskId(stat.task_id),
-    name: stat.name?.trim() || pingTaskName(stat) || `Task ${stat.task_id}`,
-    interval: stat.interval ?? 0,
-    loss: stat.loss,
-    min: stat.min,
-    max: stat.max,
-    avg: stat.avg,
-    latest: stat.latest,
-    p50: stat.p50,
-    p99: stat.p99,
-    p99_p50_ratio: stat.p99_p50_ratio,
-    stddev: stat.stddev,
-    total: stat.total,
-    valid: stat.valid,
-    loss_approximate: stat.loss_approximate,
-    type: stat.type,
-  }
-}
-
-function buildMetricRecords(seriesList: MetricSeries[]): PingRecord[] {
-  const records: PingRecord[] = []
-  const normalizedSeriesList = normalizeMetricSeriesList(seriesList).filter(isPingMetric)
-
-  for (const series of normalizedSeriesList) {
-    const taskId = normalizeMetricTaskId(pingTaskId(series))
-    if (!Number.isFinite(taskId))
-      continue
-
-    for (const point of series.points) {
-      if (point.value === null)
-        continue
-
-      records.push({
-        client: series.entity_id,
-        task_id: taskId,
-        time: point.time,
-        value: point.value,
-      })
-    }
-  }
-
-  return records.sort((a, b) => dayjs(a.time).valueOf() - dayjs(b.time).valueOf())
-}
-
-async function loadMetricPingPayload(nodeUuid: string): Promise<{ records: PingRecord[], tasks: PingTaskInfo[] } | null> {
+function pingMetricRangeParams(): Pick<MetricQueryParams, 'hours' | 'start' | 'end'> {
   const range = appliedCustomRange.value
-  const metricRangeParams = isCustomRange.value && range
+  return isCustomRange.value && range
     ? { start: range.start.toDate().toISOString(), end: range.end.toDate().toISOString() }
     : { hours: selectedHours.value }
-
-  const [statsResult, metricsResult, backendTasksResult] = await Promise.allSettled([
-    loadPingMetricStats({ entity_id: nodeUuid, ...metricRangeParams, max_points: PING_RECORD_MAX_COUNT }),
-    queryMetrics({
-      metric_keys: [PING_LATENCY_METRIC],
-      entity_id: nodeUuid,
-      ...metricRangeParams,
-      downsample: true,
-      fill_empty: true,
-      max_points: PING_RECORD_MAX_COUNT,
-      aggregation: 'avg',
-    }),
-    loadPublicPingTasks(),
-  ])
-
-  const metricStats = statsResult.status === 'fulfilled'
-    ? (statsResult.value.stats ?? []).filter(stat => stat.entity_id === nodeUuid)
-    : []
-  const metricRecords = metricsResult.status === 'fulfilled'
-    ? buildMetricRecords(metricsResult.value.series)
-    : []
-
-  const metricTaskIds = new Set(metricRecords.map(record => record.task_id))
-  const exactStatTaskIds = new Set(
-    metricStats
-      .filter(stat => stat.total > 0 && !stat.loss_approximate && Number.isFinite(stat.loss))
-      .map(stat => normalizeMetricTaskId(stat.task_id)),
-  )
-  if (!metricRecords.length || [...metricTaskIds].some(taskId => !exactStatTaskIds.has(taskId)))
-    return null
-
-  const taskMap = new Map<number, PingTaskInfo>()
-  for (const stat of metricStats) {
-    const task = normalizeMetricTask(stat)
-    taskMap.set(task.id, task)
-  }
-
-  for (const series of normalizeMetricSeriesList(
-    metricsResult.status === 'fulfilled' ? metricsResult.value.series : [],
-  ).filter(isPingMetric)) {
-    const taskId = normalizeMetricTaskId(pingTaskId(series))
-    if (!taskId || taskMap.has(taskId))
-      continue
-
-    taskMap.set(taskId, {
-      id: taskId,
-      name: pingTaskName(series) || `Task ${taskId}`,
-      interval: series.interval_seconds ?? 0,
-      loss: 0,
-    })
-  }
-
-  return {
-    records: metricRecords,
-    tasks: orderPingTasksByBackend(
-      [...taskMap.values()],
-      backendTasksResult.status === 'fulfilled' ? backendTasksResult.value : [],
-    ),
-  }
 }
-
-// ==================== 数据获取 ====================
 
 async function fetchRecords() {
   const sequence = ++fetchRecordsSequence
@@ -270,7 +150,7 @@ async function fetchRecords() {
   error.value = null
 
   try {
-    const metricPayload = await loadMetricPingPayload(requestedUuid).catch(() => null)
+    const metricPayload = await loadPingChartMetricPayload(requestedUuid, pingMetricRangeParams()).catch(() => null)
     if (sequence !== fetchRecordsSequence || requestedUuid !== props.uuid)
       return
 

@@ -2,7 +2,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import dayjs from 'dayjs'
 import { computed, ref, toValue } from 'vue'
 
-export const PING_CHART_CUSTOM_VIEW_LABEL = '自定义'
+const PING_CHART_CUSTOM_VIEW_LABEL = '自定义'
 export const PING_CHART_DEFAULT_CUSTOM_RANGE_HOURS = 24
 
 interface PingChartView {
