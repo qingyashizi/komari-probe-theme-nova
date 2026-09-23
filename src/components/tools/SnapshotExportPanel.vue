@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
 import { Icon } from '@iconify/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { CardX } from '@/components/ui/card-x'
 import { Input } from '@/components/ui/input'
+import { useNodeFinanceSettings } from '@/composables/useNodeFinanceSettings'
 import { useNodeProviderMetadata } from '@/composables/useNodeProviderMetadata'
 import { useVisitorAudit } from '@/composables/useVisitorAudit'
 import { buildSnapshotCsvAsync, buildSnapshotJsonAsync, downloadText } from '@/services/snapshot.service'
@@ -60,7 +61,7 @@ const props = defineProps<{
 
 const appStore = useAppStore()
 const { record: recordVisitorEvent } = useVisitorAudit()
-const exchangeRates = ref(financeHelper.DEFAULT_EXCHANGE_RATES)
+const { exchangeRates } = useNodeFinanceSettings()
 const exportPasswordInput = ref('')
 const exporting = ref<null | 'json' | 'csv'>(null)
 
@@ -70,11 +71,6 @@ const { getNodeProviderMetadata } = useNodeProviderMetadata({
   enabled: () => appStore.privateFeaturesAllowed,
   allowGeoLookup: () => appStore.privateFeaturesAllowed,
   geoPermission: 'snapshotExport',
-})
-
-onMounted(async () => {
-  const { rates } = await financeHelper.getDailyExchangeRates()
-  exchangeRates.value = rates
 })
 
 function formatBytes(bytes: number): string {

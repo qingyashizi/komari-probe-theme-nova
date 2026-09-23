@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
 import { Icon } from '@iconify/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { CardX } from '@/components/ui/card-x'
+import { useNodeFinanceSettings } from '@/composables/useNodeFinanceSettings'
 import { useNodeProviderMetadata } from '@/composables/useNodeProviderMetadata'
 import { useAppStore } from '@/stores/app'
 import * as financeHelper from '@/utils/financeHelper'
@@ -33,9 +34,7 @@ const props = defineProps<{
 }>()
 
 const appStore = useAppStore()
-const exchangeRates = ref(financeHelper.DEFAULT_EXCHANGE_RATES)
-const financeCurrency = ref<financeHelper.CurrencyCode>('CNY')
-const excludeFreeNodes = ref(true)
+const { exchangeRates, financeCurrency, excludeFreeNodes } = useNodeFinanceSettings()
 const sortKey = ref<SortKey>('costPerCore')
 const sortDir = ref<1 | -1>(1)
 
@@ -45,13 +44,6 @@ const { getNodeProviderMetadata } = useNodeProviderMetadata({
   enabled: () => appStore.privateFeaturesAllowed,
   allowGeoLookup: () => appStore.privateFeaturesAllowed,
   geoPermission: 'providerValue',
-})
-
-onMounted(async () => {
-  financeCurrency.value = financeHelper.getStoredFinanceCurrency()
-  excludeFreeNodes.value = financeHelper.shouldExcludeFreeNodes()
-  const { rates } = await financeHelper.getDailyExchangeRates()
-  exchangeRates.value = rates
 })
 
 function shouldExcludeNode(node: NodeData): boolean {
