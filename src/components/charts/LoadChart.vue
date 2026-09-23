@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLoadChartRange } from '@/composables/useLoadChartRange'
+import { useRecentNodeStatus } from '@/composables/useRecentNodeStatus'
 import { loadNodeLoadRecords, useNodeLoadStats } from '@/composables/useNodeLoadStats'
 import { LOAD_RECORD_MAX_COUNT } from '@/constants/load'
 import { loadMetricDefinitions, loadPublicPingTasks, queryMetrics } from '@/services/metrics.service'
@@ -27,7 +28,6 @@ import { gpuUsageFromStatus } from '@/utils/gpuHelper'
 import { formatBytes, formatBytesSplit } from '@/utils/helper'
 import { comparePingTaskOrder, createPingTaskOrderMap, metricTags, normalizeMetricSeriesList } from '@/utils/metricSeries'
 import { fillMissingTimePoints } from '@/utils/recordHelper'
-import { getSharedRpc } from '@/utils/rpc'
 import '@/utils/echarts' // 共享 ECharts 配置
 
 const props = defineProps<{
@@ -153,7 +153,6 @@ const {
 } = useLoadChartRange(maxRecordPreserveTime)
 
 // 数据状态
-const remoteData = shallowRef<StatusRecord[]>([])
 const metricData = shallowRef<RecordFormat[] | null>(null)
 const rawMetricSeries = shallowRef<NormalizedMetricSeries[]>([])
 const availableMetricKeys = shallowRef<Set<string>>(new Set())
@@ -197,8 +196,11 @@ const diskPredictionSummary = computed(() => {
   return ''
 })
 
-// RPC 客户端
-const rpc = getSharedRpc()
+const {
+  records: remoteData,
+  error: recentStatusError,
+  fetchRecentStatus,
+} = useRecentNodeStatus(() => props.uuid)
 
 // ==================== 数据获取 ====================
 
@@ -576,21 +578,10 @@ async function fetchRecentData() {
   }
   error.value = null
 
-  try {
-    const result = await rpc.getNodeRecentStatus(props.uuid)
-    const records = result?.records || []
-    records.sort((a, b) => dayjs(a.time).valueOf() - dayjs(b.time).valueOf())
-    const maxLength = 150
-    remoteData.value = records.slice(-maxLength)
-  }
-  catch (err) {
-    error.value = err instanceof Error ? err.message : '获取数据失败'
-    remoteData.value = []
-  }
-  finally {
-    loading.value = false
-    isInitialLoad.value = false
-  }
+  await fetchRecentStatus()
+  error.value = recentStatusError.value
+  loading.value = false
+  isInitialLoad.value = false
 }
 
 async function fetchHistoryData() {
