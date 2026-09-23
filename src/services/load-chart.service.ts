@@ -36,3 +36,25 @@ export async function loadLoadChartMetricHistory(
   const series = normalizeMetricSeriesList(result.series)
   return { availableMetricKeys, series }
 }
+
+export async function loadRealtimeLoadChartPingSeries(
+  uuid: string,
+  availableMetricKeys: ReadonlySet<string>,
+  supportedMetricKeys: readonly string[],
+  maxPoints: number,
+): Promise<NormalizedMetricSeries[]> {
+  const metricKeys = supportedMetricKeys.filter(key => availableMetricKeys.has(key))
+  if (!metricKeys.length)
+    return []
+
+  const result = await queryMetrics({
+    metric_keys: metricKeys,
+    entity_id: uuid,
+    hours: 1,
+    downsample: true,
+    fill_empty: true,
+    max_points: maxPoints,
+    aggregation: 'avg',
+  })
+  return normalizeMetricSeriesList(result.series)
+}

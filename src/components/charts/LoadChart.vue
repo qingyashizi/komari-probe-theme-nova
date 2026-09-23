@@ -21,8 +21,7 @@ import { useLoadMetricCatalog } from '@/composables/useLoadMetricCatalog'
 import { useRecentNodeStatus } from '@/composables/useRecentNodeStatus'
 import { loadNodeLoadRecords, useNodeLoadStats } from '@/composables/useNodeLoadStats'
 import { LOAD_RECORD_MAX_COUNT } from '@/constants/load'
-import { queryMetrics } from '@/services/metrics.service'
-import { loadLoadChartMetricHistory } from '@/services/load-chart.service'
+import { loadLoadChartMetricHistory, loadRealtimeLoadChartPingSeries } from '@/services/load-chart.service'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { getChartSeriesPalette, getLoadChartPalette } from '@/utils/chartPalette'
@@ -512,24 +511,10 @@ async function refreshRealtimeMetricSeries(force = false): Promise<void> {
     if (!availableMetricKeys.value.size)
       await loadMetricCatalog()
 
-    const metricKeys = PING_METRIC_KEYS.filter(key => availableMetricKeys.value.has(key))
-    if (!metricKeys.length) {
-      rawMetricSeries.value = []
-      return
-    }
-
-    const result = await queryMetrics({
-      metric_keys: [...metricKeys],
-      entity_id: props.uuid,
-      hours: 1,
-      downsample: true,
-      fill_empty: true,
-      max_points: 150,
-      aggregation: 'avg',
-    })
+    const series = await loadRealtimeLoadChartPingSeries(props.uuid, availableMetricKeys.value, PING_METRIC_KEYS, 150)
     if (!isRealtime.value || props.uuid !== requestedUuid)
       return
-    rawMetricSeries.value = normalizeMetricSeriesList(result.series)
+    rawMetricSeries.value = series
   }
   catch {
     if (isRealtime.value && props.uuid === requestedUuid)
