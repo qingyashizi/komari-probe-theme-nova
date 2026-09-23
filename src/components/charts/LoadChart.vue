@@ -18,6 +18,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLoadChartRange } from '@/composables/useLoadChartRange'
 import { useLoadChartPresentation } from '@/composables/useLoadChartPresentation'
+import { formatLoadChartTooltipTime, useLoadChartAxes } from '@/composables/useLoadChartAxes'
 import { useLoadMetricCatalog } from '@/composables/useLoadMetricCatalog'
 import { useRecentNodeStatus } from '@/composables/useRecentNodeStatus'
 import { loadNodeLoadRecords, useNodeLoadStats } from '@/composables/useNodeLoadStats'
@@ -713,57 +714,7 @@ const hasPingLossData = computed(() => pingLossChartSeries.value.length > 0)
 
 // ==================== 工具函数 ====================
 
-function formatTime(time: string, showDate: boolean): string {
-  const date = dayjs(time)
-  if (showDate) {
-    return date.format('M/D HH:mm')
-  }
-  return date.format('HH:mm')
-}
-
-function formatTimeForTooltip(time: string, hours: number): string {
-  const date = dayjs(time)
-  if (hours < 24) {
-    return date.format('HH:mm:ss')
-  }
-  return date.format('MM/DD HH:mm')
-}
-
-const showDateInAxis = computed(() => (effectiveHistoryHours.value) >= 24)
-
-// 通用 X 轴配置
-const baseXAxisConfig = computed(() => ({
-  type: 'category' as const,
-  data: chartData.value.map(r => formatTime(r.time, showDateInAxis.value)),
-  axisLabel: {
-    fontSize: 11,
-    color: chartThemeColors.value.textSecondary,
-    margin: 12,
-  },
-  axisLine: {
-    show: true,
-    lineStyle: { color: chartThemeColors.value.borderColor, width: 1 },
-  },
-  axisTick: { show: false },
-  boundaryGap: false,
-}))
-
-// 通用 Y 轴配置
-const baseYAxisConfig = computed(() => ({
-  type: 'value' as const,
-  axisLabel: {
-    fontSize: 11,
-    color: chartThemeColors.value.textSecondary,
-  },
-  axisLine: { show: false },
-  axisTick: { show: false },
-  splitLine: {
-    lineStyle: {
-      color: chartThemeColors.value.splitLineColor,
-      type: 'dashed' as const,
-    },
-  },
-}))
+const { baseXAxisConfig, baseYAxisConfig } = useLoadChartAxes(chartData, effectiveHistoryHours, chartThemeColors)
 
 // ==================== 图表配置 ====================
 
@@ -785,7 +736,7 @@ const cpuChartOption = computed(() => ({
       if (!record)
         return ''
 
-      const timeStr = formatTimeForTooltip(record.time, effectiveHistoryHours.value)
+      const timeStr = formatLoadChartTooltipTime(record.time, effectiveHistoryHours.value)
       let html = `<div style="font-weight:600;margin-bottom:6px;color:${chartThemeColors.value.textSecondary}">${timeStr}</div>`
       html += '<div style="display:flex;flex-direction:column;gap:4px">'
 
@@ -880,7 +831,7 @@ const memoryChartOption = computed(() => ({
       const ramPercent = ramTotal > 0 ? ((ramUsed / ramTotal) * 100).toFixed(1) : '0'
       const swapPercent = swapTotal > 0 ? ((swapUsed / swapTotal) * 100).toFixed(1) : '0'
 
-      const timeStr = formatTimeForTooltip(record.time, effectiveHistoryHours.value)
+      const timeStr = formatLoadChartTooltipTime(record.time, effectiveHistoryHours.value)
       let html = `<div style="font-weight:600;margin-bottom:6px;color:${chartThemeColors.value.textSecondary}">${timeStr}</div>`
       html += '<div style="display:flex;flex-direction:column;gap:4px">'
 
@@ -989,7 +940,7 @@ const diskChartOption = computed(() => ({
       const diskTotal = record.disk_total ?? nodeInfo.value?.disk_total ?? 0
       const diskPercent = diskTotal > 0 ? ((diskUsed / diskTotal) * 100).toFixed(1) : '0'
 
-      const timeStr = formatTimeForTooltip(record.time, effectiveHistoryHours.value)
+      const timeStr = formatLoadChartTooltipTime(record.time, effectiveHistoryHours.value)
       let html = `<div style="font-weight:600;margin-bottom:6px;color:${chartThemeColors.value.textSecondary}">${timeStr}</div>`
       html += '<div style="display:flex;flex-direction:column;gap:4px">'
       for (const item of p) {
@@ -1068,7 +1019,7 @@ const networkChartOption = computed(() => ({
       if (!record)
         return ''
 
-      const timeStr = formatTimeForTooltip(record.time, effectiveHistoryHours.value)
+      const timeStr = formatLoadChartTooltipTime(record.time, effectiveHistoryHours.value)
       let html = `<div style="font-weight:600;margin-bottom:6px;color:${chartThemeColors.value.textSecondary}">${timeStr}</div>`
       html += '<div style="display:flex;flex-direction:column;gap:4px">'
 
@@ -1151,7 +1102,7 @@ const gpuChartOption = computed(() => ({
       if (!record)
         return ''
 
-      const timeStr = formatTimeForTooltip(record.time, effectiveHistoryHours.value)
+      const timeStr = formatLoadChartTooltipTime(record.time, effectiveHistoryHours.value)
       let html = `<div style="font-weight:600;margin-bottom:6px;color:${chartThemeColors.value.textSecondary}">${timeStr}</div>`
       html += '<div style="display:flex;flex-direction:column;gap:4px">'
 
@@ -1264,7 +1215,7 @@ const connectionsChartOption = computed(() => ({
       if (!record)
         return ''
 
-      const timeStr = formatTimeForTooltip(record.time, effectiveHistoryHours.value)
+      const timeStr = formatLoadChartTooltipTime(record.time, effectiveHistoryHours.value)
       let html = `<div style="font-weight:600;margin-bottom:6px;color:${chartThemeColors.value.textSecondary}">${timeStr}</div>`
       html += '<div style="display:flex;flex-direction:column;gap:4px">'
 
@@ -1335,7 +1286,7 @@ const processChartOption = computed(() => ({
       if (!record)
         return ''
 
-      const timeStr = formatTimeForTooltip(record.time, effectiveHistoryHours.value)
+      const timeStr = formatLoadChartTooltipTime(record.time, effectiveHistoryHours.value)
       const colorDot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${firstParam.color};margin-right:8px;flex-shrink:0"></span>`
       const displayValue = firstParam.value != null ? Math.round(firstParam.value) : '-'
 
