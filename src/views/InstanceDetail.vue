@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { DetailMetricCardKey } from '@/stores/app'
-import type { CurrencyCode } from '@/utils/financeHelper'
 import { Icon } from '@iconify/vue'
 import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -10,9 +9,9 @@ import { CardX } from '@/components/ui/card-x'
 import { DataTooltip } from '@/components/ui/data-tooltip'
 import { Empty } from '@/components/ui/empty'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useNodeFinanceSettings } from '@/composables/useNodeFinanceSettings'
 import { useNodeProviderMetadata } from '@/composables/useNodeProviderMetadata'
-import { LOAD_RECORD_MAX_COUNT } from '@/constants/load'
-import { loadNodeLoadRecords } from '@/services/history.service'
+import { useNodeTrafficPeak } from '@/composables/useNodeTrafficPeak'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { formatCityNameZh } from '@/utils/cityNameHelper'
@@ -33,19 +32,13 @@ const router = useRouter()
 
 const appStore = useAppStore()
 const nodesStore = useNodesStore()
-const exchangeRates = ref(financeHelper.DEFAULT_EXCHANGE_RATES)
-const financeCurrency = ref<CurrencyCode>('CNY')
+const { exchangeRates, financeCurrency } = useNodeFinanceSettings()
 
-// 近一天网速峰值（B/s）
-const peakNetOut = ref(0)
-const peakNetIn = ref(0)
 const activeDetailSection = ref<'overview' | 'load' | 'ping'>('overview')
 const data = computed(() => nodesStore.visibleNodesByUuid.get(String(route.params.id)))
 const detailNodes = computed(() => nodesStore.visibleNodes)
 const detailNodeIndex = computed(() => detailNodes.value.findIndex(node => node.uuid === data.value?.uuid))
 const isFavoriteNode = computed(() => data.value ? appStore.isFavoriteNode(data.value.uuid) : false)
-
-let trafficPeakSeq = 0
 
 const { getNodeProviderMetadata } = useNodeProviderMetadata({
   nodes: () => data.value ? [data.value] : [],
@@ -55,55 +48,18 @@ const { getNodeProviderMetadata } = useNodeProviderMetadata({
   geoPermission: 'providerGeoLookup',
 })
 
-async function loadTrafficPeakRecords(uuid: string): Promise<Array<{ net_in?: number, net_out?: number }>> {
-  if (!appStore.privateFeaturesAllowed)
-    return []
-
-  try {
-    return await loadNodeLoadRecords(uuid, 24, LOAD_RECORD_MAX_COUNT)
-  }
-  catch {
-    return []
-  }
-}
-
-// 拉取近一天负载记录，统计网速峰值（上/下行各自取最大瞬时值）
-async function fetchTrafficPeak(uuid: string): Promise<void> {
-  const seq = ++trafficPeakSeq
-  peakNetOut.value = 0
-  peakNetIn.value = 0
-
-  const records = await loadTrafficPeakRecords(uuid)
-  if (seq !== trafficPeakSeq || data.value?.uuid !== uuid)
-    return
-
-  let up = 0
-  let down = 0
-  for (const r of records) {
-    if (typeof r.net_out === 'number' && r.net_out > up)
-      up = r.net_out
-    if (typeof r.net_in === 'number' && r.net_in > down)
-      down = r.net_in
-  }
-  peakNetOut.value = up
-  peakNetIn.value = down
-}
-
-onMounted(async () => {
-  window.scrollTo({ top: 0, behavior: 'instant' })
-  financeCurrency.value = financeHelper.getStoredFinanceCurrency()
-  const { rates } = await financeHelper.getDailyExchangeRates()
-  exchangeRates.value = rates
+// 近一天网速峰值（B/s）
+const { peakNetOut, peakNetIn } = useNodeTrafficPeak(() => data.value?.uuid, {
+  enabled: () => appStore.privateFeaturesAllowed,
 })
 
-// 当节点数据加载后尝试获取厂商信息
-// 注：节点 IP 通常不直接暴露，这里用节点 uuid 作为 fallback 标识
-// 如果 data.value 有 ip 字段则直接用，否则跳过
-watch(data, (node) => {
+onMounted(() => {
+  window.scrollTo({ top: 0, behavior: 'instant' })
+})
+
+watch(data, () => {
   activeDetailSection.value = 'overview'
-  if (node)
-    void fetchTrafficPeak(node.uuid)
-}, { immediate: true })
+})
 
 const cpuBenchmarkUrl = computed(() => getPassMarkCpuLookupUrl(data.value?.cpu_name ?? ''))
 const cpuBenchmarkRating = computed(() => getCpuBenchmarkRating(data.value?.cpu_name ?? ''))
