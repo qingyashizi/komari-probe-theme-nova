@@ -15,7 +15,10 @@ const { record: recordVisitorEvent } = useVisitorAudit()
 
 const isScrolled = inject<ReturnType<typeof ref<boolean>>>('isScrolled', ref(false))
 
-const siteFavicon = ref('/favicon.ico')
+// A dedicated vector mark, not favicon.ico: the favicon is a 16x16 raster
+// meant for the browser tab, and stretching it to this header's avatar size
+// blurred visibly.
+const siteFavicon = ref('/images/logo/probe-logo.svg')
 
 const actionButtons = computed(() => {
   const themeTitleMap = {

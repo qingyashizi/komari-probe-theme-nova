@@ -1,7 +1,9 @@
 import { requestManager } from '@/services/request.service'
 import { getSharedApi } from '@/utils/api'
 
-const THEME_SHORT_NAME = 'Glassmorphism'
+// Must match this theme's `short` in komari-theme.json ("default": it ships
+// as Sonar's embedded default theme, not an installed third-party theme).
+const THEME_SHORT_NAME = 'default'
 
 function cloneThemeSettings(current: Record<string, unknown> | string | null | undefined): Record<string, unknown> {
   if (!current)
