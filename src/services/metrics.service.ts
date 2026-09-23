@@ -1,4 +1,4 @@
-import type { MetricDefinition, MetricQueryParams, MetricQueryResponse, PingMetricStatsParams, PingMetricStatsResponse, PingTaskInfo } from '@/utils/rpc'
+import type { BuiltinPingPresets, MetricDefinition, MetricQueryParams, MetricQueryResponse, PingMetricStatsParams, PingMetricStatsResponse, PingTaskInfo } from '@/utils/rpc'
 import { CACHE_CONFIG } from '@/constants/cache'
 import { SharedCache } from '@/services/cache.service'
 import { requestManager } from '@/services/request.service'
@@ -48,6 +48,12 @@ function normalizeMetricKeys(params: MetricQueryParams): string[] {
 }
 
 const metricDefinitionsCache = new SharedCache<MetricDefinition[]>({
+  maxSize: 1,
+  ttl: CACHE_CONFIG.request.ttl,
+  cleanupInterval: CACHE_CONFIG.cleanup.interval,
+})
+
+const builtinPingPresetsCache = new SharedCache<BuiltinPingPresets>({
   maxSize: 1,
   ttl: CACHE_CONFIG.request.ttl,
   cleanupInterval: CACHE_CONFIG.cleanup.interval,
@@ -148,4 +154,22 @@ export async function loadPublicPingTasks(): Promise<PingTaskInfo[]> {
     async () => getSharedRpc().getPublicPingTasks(),
     { shouldRetry: shouldRetryMetricRequest },
   )
+}
+
+function getBuiltinPingPresetsRequestKey(): string {
+  return 'metrics:builtin-ping-presets'
+}
+
+export async function loadBuiltinPingPresets(): Promise<BuiltinPingPresets> {
+  const key = getBuiltinPingPresetsRequestKey()
+  const cached = builtinPingPresetsCache.get(key)
+  if (cached)
+    return cached
+
+  const presets = await requestManager.run(
+    key,
+    async signal => getSharedRpc().getBuiltinPingPresets(signal),
+    { shouldRetry: shouldRetryMetricRequest },
+  )
+  return builtinPingPresetsCache.set(key, presets)
 }

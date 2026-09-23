@@ -26,6 +26,7 @@ import { formatPrice, formatPriceWithCycle, getExpireStatus, getExpireText, isFr
 
 const LoadChart = defineAsyncComponent(() => import('@/components/charts/LoadChart.vue'))
 const PingChart = defineAsyncComponent(() => import('@/components/charts/PingChart.vue'))
+const ChinaLatencyMap = defineAsyncComponent(() => import('@/components/charts/ChinaLatencyMap.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -720,7 +721,15 @@ const metricCards = computed<MetricCard[]>(() => appStore.detailMetricCardOrder.
       </div>
 
       <LoadChart v-if="!appStore.nodeDetailSectionTabsEnabled || activeDetailSection === 'load'" :uuid="data.uuid" class="px-4" />
-      <PingChart v-if="!appStore.nodeDetailSectionTabsEnabled || activeDetailSection === 'ping'" :uuid="data.uuid" class="px-4" />
+      <template v-if="!appStore.nodeDetailSectionTabsEnabled || activeDetailSection === 'ping'">
+        <PingChart :uuid="data.uuid" class="px-4" />
+        <CardX
+          title="全国延迟分布" size="small"
+          class="mx-4 bg-background/50 border-none hover:bg-background transition-all rounded-md"
+        >
+          <ChinaLatencyMap :uuid="data.uuid" :name="data.name" />
+        </CardX>
+      </template>
     </template>
   </div>
 </template>
