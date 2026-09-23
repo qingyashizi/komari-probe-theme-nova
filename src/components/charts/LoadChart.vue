@@ -21,7 +21,8 @@ import { useLoadMetricCatalog } from '@/composables/useLoadMetricCatalog'
 import { useRecentNodeStatus } from '@/composables/useRecentNodeStatus'
 import { loadNodeLoadRecords, useNodeLoadStats } from '@/composables/useNodeLoadStats'
 import { LOAD_RECORD_MAX_COUNT } from '@/constants/load'
-import { loadMetricDefinitions, queryMetrics } from '@/services/metrics.service'
+import { queryMetrics } from '@/services/metrics.service'
+import { loadLoadChartMetricHistory } from '@/services/load-chart.service'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { getChartSeriesPalette, getLoadChartPalette } from '@/utils/chartPalette'
@@ -483,34 +484,14 @@ interface MetricHistoryData {
 }
 
 async function loadMetricHistoryRecords(params: Pick<MetricQueryParams, 'hours' | 'start' | 'end'>): Promise<MetricHistoryData | null> {
-  const definitions = await loadMetricDefinitions()
-  const availableKeys = new Set(definitions.map(definition => definition.name))
-  availableMetricKeys.value = availableKeys
-  const metricKeys = LOAD_METRIC_KEYS.filter(key => availableKeys.has(key))
-  if (!metricKeys.length)
-    return null
-
-  const result = await queryMetrics({
-    metric_keys: metricKeys,
-    entity_id: props.uuid,
-    ...params,
-    downsample: true,
-    fill_empty: true,
-    max_points: METRIC_HISTORY_MAX_POINTS,
-    aggregation: 'avg',
-    aggregation_by_metric: {
-      'net.total.up': 'last',
-      'net.total.down': 'last',
-    },
-  })
-
-  const series = normalizeMetricSeriesList(result.series)
-  if (!series.some(item => item.points.length > 0))
+  const metricHistory = await loadLoadChartMetricHistory(props.uuid, LOAD_METRIC_KEYS, params, METRIC_HISTORY_MAX_POINTS)
+  availableMetricKeys.value = metricHistory.availableMetricKeys
+  if (!metricHistory.series.some(item => item.points.length > 0))
     return null
 
   return {
-    records: metricSeriesToRecordFormat(result.series),
-    series,
+    records: metricSeriesToRecordFormat(metricHistory.series),
+    series: metricHistory.series,
   }
 }
 
