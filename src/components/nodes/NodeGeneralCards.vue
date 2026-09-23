@@ -6,7 +6,7 @@ import type { TopNodeMetric } from '@/utils/nodeMetricsHelper'
 import { Icon } from '@iconify/vue'
 import { useNow } from '@vueuse/core'
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
-import NodeEarthGlobe from '@/components/NodeEarthGlobe.vue'
+import NodeEarthGlobe from '@/components/earth/NodeEarthGlobe.vue'
 import { CardX } from '@/components/ui/card-x'
 import { DataTooltip } from '@/components/ui/data-tooltip'
 import { UI_CONFIG } from '@/constants/ui'
@@ -66,7 +66,7 @@ const props = defineProps<{
 }>()
 const appStore = useAppStore()
 const nodesStore = useNodesStore()
-const FinanceDetailsDialog = defineAsyncComponent(() => import('@/components/FinanceDetailsDialog.vue'))
+const FinanceDetailsDialog = defineAsyncComponent(() => import('@/components/tools/FinanceDetailsDialog.vue'))
 // 未登录且开启「未登录隐藏价格」时，屏蔽金额类信息
 const showPrice = computed(() => appStore.privateFeaturesAllowed || !appStore.hidePriceWhenLoggedOut)
 const exchangeRates = ref(financeHelper.DEFAULT_EXCHANGE_RATES)

@@ -8,11 +8,11 @@ import { useSafeAreaZoom } from '@/composables/useSafeAreaZoom'
 import { useVisitorPageAudit } from '@/composables/useVisitorAudit'
 import { useAppStore } from '@/stores/app'
 import { destroyInitManager, initApp, retryInitApp } from '@/utils/init'
-import Background from './components/Background.vue'
-import Footer from './components/Footer.vue'
-import Header from './components/Header.vue'
-import LoadingCover from './components/LoadingCover.vue'
-import Provider from './components/Provider.vue'
+import Background from './components/layout/Background.vue'
+import Footer from './components/layout/Footer.vue'
+import Header from './components/layout/Header.vue'
+import LoadingCover from './components/layout/LoadingCover.vue'
+import Provider from './components/layout/Provider.vue'
 
 const appStore = useAppStore()
 useVisitorPageAudit()

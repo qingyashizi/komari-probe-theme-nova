@@ -12,6 +12,11 @@
 
 ## 当前任务
 
+- 状态：in-progress，`refactor/theme-nova-source-layout`。
+- 目标：按业务域整理 `src/components/`，随后将 `LoadChart` 的数据与 ECharts option 组合逻辑迁至 composables，保持公开路由、交互与视觉不变。
+- 已完成：第一阶段将业务组件归入 `layout`、`nodes`、`charts`、`earth`、`tools`、`content`，`components/ui` 保持不动；已更新所有 `src` import。
+- 验证待执行：lint、type-check/build、Playwright 视觉回归。
+
 - 状态：done，v3.3.19 已通过 GitHub API 发布。
 - 内容：三网新版 Sparkline 悬停/点按查看每个时间段延迟；粗指针停留提示；折线区域禁止选中复制；忽略 iOS 兼容鼠标、按 rowKey 处理 pointerleave、不 capture 以免挡住滚动。
 - 提交：`d24b963` `feat: add sparkline period latency inspect and release 3.3.19`，已推送 `main`。

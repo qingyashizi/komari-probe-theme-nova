@@ -25,8 +25,8 @@ import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
 
 import { formatPrice, formatPriceWithCycle, getExpireStatus, getExpireText, isFreePrice, parseTags } from '@/utils/tagHelper'
 
-const LoadChart = defineAsyncComponent(() => import('@/components/LoadChart.vue'))
-const PingChart = defineAsyncComponent(() => import('@/components/PingChart.vue'))
+const LoadChart = defineAsyncComponent(() => import('@/components/charts/LoadChart.vue'))
+const PingChart = defineAsyncComponent(() => import('@/components/charts/PingChart.vue'))
 
 const route = useRoute()
 const router = useRouter()

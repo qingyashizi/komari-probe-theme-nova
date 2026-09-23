@@ -6,8 +6,8 @@ import { Icon } from '@iconify/vue'
 import { useDebounceFn } from '@vueuse/core'
 import { computed, defineAsyncComponent, nextTick, onActivated, onDeactivated, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import DeferredRender from '@/components/DeferredRender.vue'
-import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
+import DeferredRender from '@/components/nodes/DeferredRender.vue'
+import MarkdownRenderer from '@/components/content/MarkdownRenderer.vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
@@ -45,16 +45,16 @@ interface HomeToolOption {
 
 defineOptions({ name: 'HomeView' })
 
-const AuditLogPanel = defineAsyncComponent(() => import('@/components/AuditLogPanel.vue'))
-const HealthSummaryPanel = defineAsyncComponent(() => import('@/components/HealthSummaryPanel.vue'))
-const NodeCard = defineAsyncComponent(() => import('@/components/NodeCard.vue'))
-const NodeGeneralCards = defineAsyncComponent(() => import('@/components/NodeGeneralCards.vue'))
-const NodeList = defineAsyncComponent(() => import('@/components/NodeList.vue'))
-const NodeComparePanel = defineAsyncComponent(() => import('@/components/NodeComparePanel.vue'))
-const PingMonitorDialog = defineAsyncComponent(() => import('@/components/PingMonitorDialog.vue'))
-const NodeTopologyPanel = defineAsyncComponent(() => import('@/components/NodeTopologyPanel.vue'))
-const ProviderValuePanel = defineAsyncComponent(() => import('@/components/ProviderValuePanel.vue'))
-const SnapshotExportPanel = defineAsyncComponent(() => import('@/components/SnapshotExportPanel.vue'))
+const AuditLogPanel = defineAsyncComponent(() => import('@/components/tools/AuditLogPanel.vue'))
+const HealthSummaryPanel = defineAsyncComponent(() => import('@/components/tools/HealthSummaryPanel.vue'))
+const NodeCard = defineAsyncComponent(() => import('@/components/nodes/NodeCard.vue'))
+const NodeGeneralCards = defineAsyncComponent(() => import('@/components/nodes/NodeGeneralCards.vue'))
+const NodeList = defineAsyncComponent(() => import('@/components/nodes/NodeList.vue'))
+const NodeComparePanel = defineAsyncComponent(() => import('@/components/tools/NodeComparePanel.vue'))
+const PingMonitorDialog = defineAsyncComponent(() => import('@/components/tools/PingMonitorDialog.vue'))
+const NodeTopologyPanel = defineAsyncComponent(() => import('@/components/tools/NodeTopologyPanel.vue'))
+const ProviderValuePanel = defineAsyncComponent(() => import('@/components/tools/ProviderValuePanel.vue'))
+const SnapshotExportPanel = defineAsyncComponent(() => import('@/components/tools/SnapshotExportPanel.vue'))
 
 const nodeItemStaggerMs = UI_CONFIG.motion.staggerMs
 const nodeItemStaggerLimit = UI_CONFIG.motion.staggerLimit

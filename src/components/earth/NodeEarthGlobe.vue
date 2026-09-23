@@ -10,9 +10,9 @@ const props = defineProps<{
 const attrs = useAttrs()
 const appStore = useAppStore()
 
-const NodeEarthCobeGlobe = defineAsyncComponent(() => import('@/components/NodeEarthCobeGlobe.vue'))
-const NodeEarthRealisticGlobe = defineAsyncComponent(() => import('@/components/NodeEarthRealisticGlobe.vue'))
-const NodeEarthTiledMap = defineAsyncComponent(() => import('@/components/NodeEarthTiledMap.vue'))
+const NodeEarthCobeGlobe = defineAsyncComponent(() => import('@/components/earth/NodeEarthCobeGlobe.vue'))
+const NodeEarthRealisticGlobe = defineAsyncComponent(() => import('@/components/earth/NodeEarthRealisticGlobe.vue'))
+const NodeEarthTiledMap = defineAsyncComponent(() => import('@/components/earth/NodeEarthTiledMap.vue'))
 
 const earthComponent = computed(() => {
   const components = {

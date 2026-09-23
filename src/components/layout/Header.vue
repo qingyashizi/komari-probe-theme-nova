@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import VisitorInfo from '@/components/VisitorInfo.vue'
+import VisitorInfo from '@/components/layout/VisitorInfo.vue'
 import { useVisitorAudit } from '@/composables/useVisitorAudit'
 import { useAppStore } from '@/stores/app'
 

@@ -12,7 +12,7 @@ const emit = defineEmits<{
   'update:open': [open: boolean]
 }>()
 
-const PingChart = defineAsyncComponent(() => import('@/components/PingChart.vue'))
+const PingChart = defineAsyncComponent(() => import('@/components/charts/PingChart.vue'))
 </script>
 
 <template>
