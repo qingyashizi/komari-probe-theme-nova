@@ -361,6 +361,36 @@ export interface MetricQueryResponse {
   count: number
 }
 
+/** 内置"全国31省市三网延迟检测"节点目录（省份/运营商元数据 + 目标地址） */
+export interface BuiltinPingProvince {
+  code: string
+  name: string
+}
+
+export interface BuiltinPingCarrier {
+  code: string
+  name: string
+}
+
+export interface BuiltinPingNode {
+  province_code: string
+  province_name: string
+  carrier_code: string
+  carrier_name: string
+  ip_version: number
+  name: string
+  target: string
+}
+
+export interface BuiltinPingPresets {
+  provinces: BuiltinPingProvince[]
+  carriers: BuiltinPingCarrier[]
+  nodes_v4: BuiltinPingNode[]
+  nodes_v6: BuiltinPingNode[]
+  credit: string
+  credit_url: string
+}
+
 export interface PingMetricStatsParams {
   [key: string]: unknown
   uuid?: string
@@ -985,6 +1015,10 @@ export class KomariRpc {
 
   async getPublicPingTasks(): Promise<PingTaskInfo[]> {
     return this.client.call<PingTaskInfo[]>('public:getPublicPingTasks')
+  }
+
+  async getBuiltinPingPresets(signal?: AbortSignal): Promise<BuiltinPingPresets> {
+    return this.client.call<BuiltinPingPresets>('public:getBuiltinPingPresets', undefined, signal)
   }
 
   async listPublicMetricDefinitions(): Promise<MetricDefinition[]> {
