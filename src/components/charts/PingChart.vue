@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PingChartCustomRange } from '@/composables/usePingChartRange'
 import type { MetricSeries, PingMetricTaskStats, PingRecord, PingTaskInfo } from '@/utils/rpc'
 import { Icon } from '@iconify/vue'
 import dayjs from 'dayjs'
@@ -10,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { PING_CHART_DEFAULT_CUSTOM_RANGE_HOURS, usePingChartRange } from '@/composables/usePingChartRange'
 import { PING_RECORD_MAX_COUNT } from '@/constants/load'
 import { loadPingRecordsWithTasks } from '@/services/history.service'
 import { loadPingMetricStats, loadPublicPingTasks, queryMetrics } from '@/services/metrics.service'
@@ -26,11 +28,7 @@ const props = defineProps<{
 const appStore = useAppStore()
 const isDark = computed(() => appStore.isDark)
 
-interface CustomRange {
-  start: dayjs.Dayjs
-  end: dayjs.Dayjs
-  hours: number
-}
+type CustomRange = PingChartCustomRange
 
 // 图表主题相关颜色
 const chartThemeColors = computed(() => ({
@@ -53,90 +51,25 @@ watchEffect(() => {
 // 从 publicSettings 获取记录保留时间
 const maxPingRecordPreserveTime = computed(() => appStore.publicSettings?.ping_record_preserve_time || 168)
 
-// 视图选项
-const presetViews = [
-  { label: '1 小时', hours: 1 },
-  { label: '6 小时', hours: 6 },
-  { label: '12 小时', hours: 12 },
-  { label: '1 天', hours: 24 },
-]
-const CUSTOM_VIEW_LABEL = '自定义'
-const DEFAULT_CUSTOM_RANGE_HOURS = 24
+const {
+  availableViews,
+  selectedView,
+  customStartInput,
+  customEndInput,
+  isCustomRange,
+  customRange,
+  customRangeError,
+  ensureDefaultCustomRange,
+} = usePingChartRange(maxPingRecordPreserveTime)
 
-// 可用视图列表
-const availableViews = computed(() => {
-  const views: { label: string, hours?: number }[] = []
-  const maxHours = maxPingRecordPreserveTime.value
-
-  for (const v of presetViews) {
-    if (maxHours >= v.hours) {
-      views.push(v)
-    }
-  }
-
-  const maxPreset = presetViews.at(-1)
-  if (maxPreset && maxHours > maxPreset.hours) {
-    const label = maxHours % 24 === 0
-      ? `${Math.floor(maxHours / 24)} 天`
-      : `${maxHours} 小时`
-    views.push({ label, hours: maxHours })
-  }
-  else if (maxHours > 1 && !presetViews.some(v => v.hours === maxHours)) {
-    const label = maxHours % 24 === 0
-      ? `${Math.floor(maxHours / 24)} 天`
-      : `${maxHours} 小时`
-    views.push({ label, hours: maxHours })
-  }
-
-  views.push({ label: CUSTOM_VIEW_LABEL })
-  return views
-})
-
-// 当前选中的视图
-const selectedView = ref<string>('')
-const customStartInput = ref('')
-const customEndInput = ref('')
 const appliedCustomRange = shallowRef<CustomRange | null>(null)
-const isCustomRange = computed(() => selectedView.value === CUSTOM_VIEW_LABEL)
-const customRange = computed<CustomRange | null>(() => {
-  if (!customStartInput.value || !customEndInput.value)
-    return null
-
-  const start = dayjs(customStartInput.value)
-  const end = dayjs(customEndInput.value)
-  if (!start.isValid() || !end.isValid() || !end.isAfter(start))
-    return null
-
-  return {
-    start,
-    end,
-    hours: Math.max(1, Math.ceil(end.diff(start, 'hour', true))),
-  }
-})
-const customRangeError = computed(() => {
-  if (!isCustomRange.value || (!customStartInput.value && !customEndInput.value))
-    return ''
-  if (!customStartInput.value || !customEndInput.value)
-    return '请选择开始和结束时间'
-  return customRange.value ? '' : '结束时间必须晚于开始时间'
-})
 const selectedHours = computed(() => {
   if (isCustomRange.value)
-    return appliedCustomRange.value?.hours ?? customRange.value?.hours ?? DEFAULT_CUSTOM_RANGE_HOURS
+    return appliedCustomRange.value?.hours ?? customRange.value?.hours ?? PING_CHART_DEFAULT_CUSTOM_RANGE_HOURS
 
   const view = availableViews.value.find(v => v.label === selectedView.value)
   return view?.hours || 1
 })
-
-function ensureDefaultCustomRange() {
-  if (customStartInput.value && customEndInput.value)
-    return
-
-  const end = dayjs()
-  const hours = Math.max(1, Math.min(DEFAULT_CUSTOM_RANGE_HOURS, maxPingRecordPreserveTime.value))
-  customStartInput.value = end.subtract(hours, 'hour').format('YYYY-MM-DDTHH:mm')
-  customEndInput.value = end.format('YYYY-MM-DDTHH:mm')
-}
 
 // 初始化默认视图
 watch(availableViews, (views) => {
