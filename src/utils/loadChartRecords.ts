@@ -34,7 +34,7 @@ export const LOAD_METRIC_KEYS = [
 
 export const PING_METRIC_KEYS = ['ping.latency_ms', 'ping.loss'] as const
 
-export type LoadMetricKey = typeof LOAD_METRIC_KEYS[number]
+type LoadMetricKey = typeof LOAD_METRIC_KEYS[number]
 
 interface NodeDiskAndMemoryTotals {
   mem_total?: number | null
