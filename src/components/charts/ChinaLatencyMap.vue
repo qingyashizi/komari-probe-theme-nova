@@ -15,6 +15,13 @@ const props = defineProps<{
   name: string
 }>()
 
+// 台湾/香港/澳门/南海诸岛/十段线不在内置探测省份目录里，不会出现在 seriesData
+// 里，如果不显式给它们上色，ECharts 会用自己的默认区域色——这个默认色在深色
+// 仪表盘背景下还看得清，但导出图片背景强制是纯白，默认色跟白底几乎融为一体，
+// 整块区域直接"消失"。十段线是 MultiLineString，画不出面颜色，只给边框。
+const AUX_REGION_NAMES = ['台湾', '香港', '澳门', '南海诸岛', '十段线'] as const
+const AUX_LINE_NAMES = new Set(['十段线'])
+
 const appStore = useAppStore()
 const isDark = computed(() => appStore.isDark)
 const colorVisionFriendly = computed(() => appStore.colorVisionFriendly)
@@ -118,15 +125,25 @@ function buildOption() {
       return {
         name: province.name,
         value: undefined,
-        itemStyle: { areaColor: theme.noDataArea, borderColor: theme.areaBorder },
+        itemStyle: { areaColor: theme.noDataArea, borderColor: theme.areaBorder } as { areaColor?: string, borderColor: string },
       }
     }
     return {
       name: province.name,
       value,
-      itemStyle: { areaColor: colorForValue(selectedMetric.value, value), borderColor: theme.areaBorder },
+      itemStyle: { areaColor: colorForValue(selectedMetric.value, value), borderColor: theme.areaBorder } as { areaColor?: string, borderColor: string },
     }
   })
+
+  for (const name of AUX_REGION_NAMES) {
+    seriesData.push({
+      name,
+      value: undefined,
+      itemStyle: AUX_LINE_NAMES.has(name)
+        ? { borderColor: theme.areaBorder }
+        : { areaColor: theme.noDataArea, borderColor: theme.areaBorder },
+    })
+  }
 
   chartOption.value = {
     backgroundColor: 'transparent',
@@ -231,9 +248,19 @@ async function exportImage() {
     const seriesData = provinces.map((province) => {
       const value = valueForProvince(province.code)
       if (value === undefined)
-        return { name: province.name, value: undefined, itemStyle: { areaColor: '#f1f2f4', borderColor: '#ffffff' } }
-      return { name: province.name, value, itemStyle: { areaColor: lightTheme.colorForValue(metric, value), borderColor: '#ffffff' } }
+        return { name: province.name, value: undefined, itemStyle: { areaColor: '#f1f2f4', borderColor: '#ffffff' } as { areaColor?: string, borderColor: string } }
+      return { name: province.name, value, itemStyle: { areaColor: lightTheme.colorForValue(metric, value), borderColor: '#ffffff' } as { areaColor?: string, borderColor: string } }
     })
+
+    for (const name of AUX_REGION_NAMES) {
+      seriesData.push({
+        name,
+        value: undefined,
+        itemStyle: AUX_LINE_NAMES.has(name)
+          ? { borderColor: '#d1d5db' }
+          : { areaColor: '#f1f2f4', borderColor: '#d1d5db' },
+      })
+    }
 
     const chartWidth = 860
     const chartHeight = 520
